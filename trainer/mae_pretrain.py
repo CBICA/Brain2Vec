@@ -8,6 +8,7 @@ def train_step(
     model: torch.nn.Module,
     dataloader: DataLoader,
     optimizer: torch.optim.Optimizer,
+    scaler: torch.amp.GradScaler,
     device: str,
 ) -> float:
     model.train(True)
@@ -18,12 +19,14 @@ def train_step(
         X = X.to(device)
         X = X.float()
 
-        with torch.autocast(device_type=device):
+        with torch.autocast(device_type=device, dtype=torch.float16):
             loss, _, _ = model(X)
 
-        loss.backward()
+        scaler.scale(loss).backward()
+        scaler.step(optimizer)
+        scaler.update()
 
-        optimizer.step()
+        optimizer.zero_grad()
 
         mse += loss.item()
 
@@ -44,7 +47,7 @@ def test_step(
         X = X.to(device)
         X = X.float()
 
-        with torch.autocast(device_type=device):
+        with torch.autocast(device_type=device, dtype=torch.float16):
             loss, _, _ = model(X)
 
         mse += loss.item()
@@ -76,11 +79,14 @@ def train(
         increase=False,
     )
 
+    scaler = torch.amp.GradScaler(device)
+
     for epoch in tqdm(range(epochs)):
         train_mse = train_step(
             model=model,
             dataloader=train_dataloader,
             optimizer=optimizer,
+            scaler=scaler,
             device=device,
         )
 
