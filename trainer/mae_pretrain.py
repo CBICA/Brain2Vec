@@ -43,14 +43,15 @@ def test_step(
 
     mse = 0.0
 
-    for X in dataloader:
-        X = X.to(device)
-        X = X.float()
+    with torch.no_grad():
+        for X in dataloader:
+            X = X.to(device)
+            X = X.float()
 
-        with torch.autocast(device_type=device, dtype=torch.float16):
-            loss, _, _ = model(X)
+            with torch.autocast(device_type=device, dtype=torch.float16):
+                loss, _, _ = model(X)
 
-        mse += loss.item()
+            mse += loss.item()
 
     mse /= float(len(dataloader))
     return mse
