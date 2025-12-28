@@ -4,7 +4,8 @@ from typing import Any, Tuple
 import torch
 import torch.nn as nn
 from timm.models.vision_transformer import Block
-from utils import get_3d_sincos_pos_embed
+
+from NiChart_ViT.models.utils import get_3d_sincos_pos_embed
 
 
 class PatchEmbedding(nn.Module):

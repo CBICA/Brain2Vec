@@ -1,0 +1,46 @@
+Metadata-Version: 2.4
+Name: NiChart_ViT
+Version: 0.0.1
+Summary: ViT Training for NiChart
+Home-page: https://github.com/CBICA/NiChart_ViT/
+Download-URL: https://github.com/CBICA/NiChart_ViT/
+Author: Spiros Maggioros
+Author-email: software@cbica.upenn.edu
+Maintainer: Spiros Maggioros
+Maintainer-email: Spiros.Maggioros@pennmedicine.upenn.edu
+License: By installing/using NiChart_ViT, the user agrees to the following license: See https://www.med.upenn.edu/cbica/software-agreement-non-commercial.html
+Keywords: deep learning,semantic segmentation,medical image analysis
+Classifier: Intended Audience :: Developers
+Classifier: Intended Audience :: Science/Research
+Classifier: Intended Audience :: Healthcare Industry
+Classifier: Programming Language :: Python :: 3
+Classifier: Topic :: Scientific/Engineering :: Artificial Intelligence
+Classifier: Topic :: Scientific/Engineering :: Image Processing
+Classifier: Topic :: Scientific/Engineering :: Medical Science Apps.
+Requires-Python: >=3.9
+Description-Content-Type: text/markdown
+License-File: LICENSE
+Requires-Dist: torch
+Requires-Dist: torchvision
+Requires-Dist: torchio
+Requires-Dist: torchmetrics
+Requires-Dist: tqdm
+Requires-Dist: numpy
+Requires-Dist: pandas
+Dynamic: author
+Dynamic: author-email
+Dynamic: classifier
+Dynamic: description
+Dynamic: description-content-type
+Dynamic: download-url
+Dynamic: home-page
+Dynamic: keywords
+Dynamic: license
+Dynamic: license-file
+Dynamic: maintainer
+Dynamic: maintainer-email
+Dynamic: requires-dist
+Dynamic: requires-python
+Dynamic: summary
+
+# NiChart_ViT
