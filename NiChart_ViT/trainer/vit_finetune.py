@@ -26,6 +26,7 @@ def train_step(
     dataloader: DataLoader,
     loss_fn: torch.nn.Module,
     optimizer: torch.optim.Optimizer,
+    scaler: torch.amp.GradScaler,
     num_classes: Optional[int] = None,
     device: Literal["cuda", "mps", "cpu"] = "cuda",
 ) -> dict:
@@ -91,16 +92,17 @@ def train_step(
         optimizer.zero_grad()
 
         # make prediction
-        y_pred = model(X).squeeze()
+        with torch.autocast(device_type=device, dtype=torch.float16):
+            y_pred = model(X).squeeze()
 
         # loss computation
         loss = loss_fn(y_pred, y)
 
-        # loss backward
-        loss.backward()
+        scaler.scale(loss).backward()
+        scaler.step(optimizer)
+        scaler.update()
 
-        # optimizer step
-        optimizer.step()
+        optimizer.zero_grad()
 
         if mode == "regression":
             stats["train_mae"] += loss.item()
@@ -201,7 +203,8 @@ def test_step(
             else:
                 X, y = X.float(), y.long()
 
-            test_pred = model(X).squeeze()
+            with torch.autocast(device_type=device, dtype=torch.float16):
+                test_pred = model(X).squeeze()
 
             loss = loss_fn(test_pred, y)
 
@@ -294,6 +297,8 @@ def train(
         patience=patience, increase=True if (mode != "regression") else False
     )
 
+    scaler = torch.amp.GradScaler(device)
+
     for epoch in tqdm(range(epochs)):
         train_stats = train_step(
             model=model,
@@ -302,6 +307,7 @@ def train(
             loss_fn=loss_fn,
             optimizer=optimizer,
             device=device,
+            scaler=scaler,
             num_classes=num_classes if num_classes is not None else None,
         )
 
