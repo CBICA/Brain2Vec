@@ -49,7 +49,7 @@ class VisionTransformer(timm.models.vision_transformer.VisionTransformer):
 
             del self.norm  # remove the original norm
 
-    def forward_features(self, x: torch.Tensor) -> torch.Tensor:
+    def forward_features(self, x: torch.Tensor, attn_mask: Any = None) -> torch.Tensor:
         B = x.shape[0]
         x = self.patch_embed(x)
 
