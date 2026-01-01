@@ -18,7 +18,7 @@ def main() -> None:
     )
 
     optimizer = torch.optim.AdamW(model.parameters(), lr=0.001, amsgrad=True)
-    loss_fn = torch.nn.BCEWithLogitsLoss()
+    loss_fn = torch.nn.L1Loss(reduction="mean")
 
     train(
         model=model,
