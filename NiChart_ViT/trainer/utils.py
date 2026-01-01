@@ -75,4 +75,9 @@ def save_model(model: torch.nn.Module, target_dir: str, model_name: str) -> None
 
 def load_weights(model: torch.nn.Module, model_weights: str, device: str) -> None:
     state_dict = torch.load(model_weights, map_location=torch.device(device))
-    model.load_state_dict(state_dict, strict=False)
+    missing_keys, unexpected_keys = model.load_state_dict(state_dict, strict=False)
+
+    total_model_keys = len(model.state_dict().keys())
+    loaded_keys = total_model_keys - len(missing_keys)
+
+    print(f"Successfully loaded: {loaded_keys} | Total missing keys: {missing_keys}")

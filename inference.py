@@ -60,6 +60,6 @@ def run_one_scan(scan: str, weights: str) -> None:
 
 if __name__ == "__main__":
     run_one_scan(
-        scan="test_images/3419196_2_0_T1_LPS_dlicv_aligned.nii.gz",
+        scan="../Datasets/BAScores/ISTAG_CN_All/istaging_2_new/CN_split/eval/3419196_2_0_T1_LPS_dlicv_aligned.nii.gz",
         weights="weights/MAE_TEST.pth",
     )
