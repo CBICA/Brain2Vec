@@ -6,7 +6,6 @@ from typing import Any, Optional
 import numpy as np
 import pandas as pd
 import torch
-import torch.nn as nn
 import torchio as tio
 from torch.utils.data import DataLoader, Dataset
 from typing_extensions import Literal
@@ -95,7 +94,7 @@ class NiftiLoader(Dataset):
                 if random.randint(0, 2):
                     transforms.append(tio.RandomFlip(axes=("LR",)))
                 if random.randint(0, 2):
-                    tio.RandomNoise(mean=0, std=2),
+                    transforms.append(tio.RandomNoise(mean=0, std=2))
                 if random.randint(0, 2):
                     transforms.append(
                         tio.Affine(
@@ -207,8 +206,3 @@ def create_dataloaders(
         eval_dataloader = None
 
     return train_dataloader, test_dataloader, eval_dataloader
-
-
-def load_weights(model: nn.Module, model_weights: str, device: str) -> None:
-    state_dict = torch.load(model_weights, map_location=torch.device(device))
-    model.load_state_dict(state_dict, strict=False)

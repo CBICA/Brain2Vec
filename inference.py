@@ -3,8 +3,8 @@ import torch
 import torchio as tio
 from torch.nn import functional as F
 
-from NiChart_ViT.dataloader.loader import load_weights
 from NiChart_ViT.models.mae import mae_vit_base_patch16_dec512d8b
+from NiChart_ViT.trainer.utils import load_weights
 
 
 def run_one_scan(scan: str, weights: str) -> None:

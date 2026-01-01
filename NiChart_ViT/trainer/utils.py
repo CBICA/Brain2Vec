@@ -71,3 +71,8 @@ def save_model(model: torch.nn.Module, target_dir: str, model_name: str) -> None
 
     print(f"[INFO] Saving model to: {model_save_path}")
     torch.save(obj=model.state_dict(), f=model_save_path)
+
+
+def load_weights(model: torch.nn.Module, model_weights: str, device: str) -> None:
+    state_dict = torch.load(model_weights, map_location=torch.device(device))
+    model.load_state_dict(state_dict, strict=False)

@@ -1,7 +1,8 @@
 import torch
 from torch.utils.data import DataLoader
 from tqdm.auto import tqdm
-from utils import EarlyStopper, save_model
+
+from NiChart_ViT.trainer.utils import EarlyStopper, save_model
 
 
 def train_step(
