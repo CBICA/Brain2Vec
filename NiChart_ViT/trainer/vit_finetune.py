@@ -88,9 +88,6 @@ def train_step(
         else:
             X, y = X.float(), y.long()
 
-        # zero grad
-        optimizer.zero_grad()
-
         # make prediction
         with torch.autocast(device_type=device, dtype=torch.float16):
             y_pred = model(X).squeeze()
