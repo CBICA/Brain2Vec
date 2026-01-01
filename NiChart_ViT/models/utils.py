@@ -1,5 +1,27 @@
 import numpy as np
 import torch
+import torch.nn as nn
+
+
+class PatchEmbedding(nn.Module):
+    def __init__(
+        self,
+        img_size: int = 128,
+        patch_size: int = 8,
+        num_hidden: int = 512,
+    ) -> None:
+        super().__init__()
+
+        self.img_size, self.patch_size = (img_size, img_size, img_size), (
+            patch_size,
+            patch_size,
+            patch_size,
+        )
+        self.num_patches = (img_size // patch_size) ** 3
+        self.conv = nn.Conv3d(1, num_hidden, kernel_size=patch_size, stride=patch_size)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return self.conv(x).flatten(2).transpose(1, 2)
 
 
 def get_3d_sincos_pos_embed(

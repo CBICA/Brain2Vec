@@ -16,12 +16,30 @@ import timm.models.vision_transformer
 import torch
 import torch.nn as nn
 
+from NiChart_ViT.models.utils import PatchEmbedding
+
 
 class VisionTransformer(timm.models.vision_transformer.VisionTransformer):
     """Vision Transformer with support for global average pooling"""
 
     def __init__(self, global_pool: bool = False, **kwargs: Any) -> None:
         super(VisionTransformer, self).__init__(**kwargs)
+
+        img_size = 128 if "img_size" not in kwargs else kwargs["img_size"]
+        patch_size = 8 if "patch_size" not in kwargs else kwargs["patch_size"]
+        embed_dim = 512 if "embed_dim" not in kwargs else kwargs["embed_dim"]
+
+        self.patch_embed = PatchEmbedding(
+            img_size=img_size,
+            patch_size=patch_size,
+            num_hidden=embed_dim,
+        )
+        num_patches = self.patch_embed.num_patches
+
+        self.pos_embed = nn.Parameter(
+            torch.zeros(1, num_patches + 1, embed_dim),
+            requires_grad=False,
+        )
 
         self.global_pool = global_pool
         if self.global_pool:
