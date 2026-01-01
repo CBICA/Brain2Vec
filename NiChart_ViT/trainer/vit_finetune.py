@@ -95,8 +95,8 @@ def train_step(
         with torch.autocast(device_type=device, dtype=torch.float16):
             y_pred = model(X).squeeze()
 
-        # loss computation
-        loss = loss_fn(y_pred, y)
+            # loss computation
+            loss = loss_fn(y_pred, y)
 
         scaler.scale(loss).backward()
         scaler.step(optimizer)
@@ -206,7 +206,7 @@ def test_step(
             with torch.autocast(device_type=device, dtype=torch.float16):
                 test_pred = model(X).squeeze()
 
-            loss = loss_fn(test_pred, y)
+                loss = loss_fn(test_pred, y)
 
             if mode == "regression":
                 stats["test_mae"] += loss.item()
