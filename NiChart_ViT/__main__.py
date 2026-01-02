@@ -3,6 +3,7 @@ from typing import Any, Optional
 
 import torch
 from torch import nn
+from torch.distributed import destroy_process_group
 
 from NiChart_ViT.dataloader.loader import create_dataloaders
 from NiChart_ViT.models.mae import (
@@ -269,3 +270,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+    destroy_process_group()

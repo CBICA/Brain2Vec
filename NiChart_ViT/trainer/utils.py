@@ -58,10 +58,6 @@ def setup_distributed(is_master: bool) -> None:
     os.environ["MASTER_PORT"] = "12355"
 
 
-def cleanup_distributed() -> None:
-    dist.destroy_process_group()
-
-
 def get_world_size() -> int:
     if not dist.is_available() or not dist.is_initialized():
         return 1
