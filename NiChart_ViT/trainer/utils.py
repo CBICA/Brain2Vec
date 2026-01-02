@@ -9,18 +9,34 @@ import torch.distributed as dist
 
 
 def init_distributed_mode(args: Any) -> None:
-    os.environ["MASTER_ADDR"] = "localhost"
-    os.environ["MASTER_PORT"] = "12355"
     if "SLURM_PROCID" in os.environ:
         args.rank = int(os.environ["SLURM_PROCID"])
-        args.gpu = args.rank % torch.accelerator.device_count()
+        args.world_size = int(os.environ["SLURM_NTASKS"])
+        args.gpu = args.rank % torch.cuda.device_count()
+
+        node_list = os.environ.get("SLURM_JOB_NODELIST")
+        if node_list:
+            import subprocess
+
+            master_node = (
+                subprocess.check_output(
+                    f"scontrol show hostnames {node_list} | head -n 1", shell=True
+                )
+                .decode()
+                .strip()
+            )
+            os.environ["MASTER_ADDR"] = master_node
+        else:
+            os.environ["MASTER_ADDR"] = "localhost"
+
+        os.environ["MASTER_PORT"] = os.environ.get("MASTER_PORT", "12355")
+
+        args.distributed = True
     else:
-        print("Nor using distributed mode")
+        print("Not using distributed mode")
         setup_distributed(is_master=True)
         args.distributed = False
         return
-
-    args.distributed = True
 
     torch.cuda.set_device(args.gpu)
     args.dist_backend = "nccl"

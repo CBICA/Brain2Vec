@@ -13,7 +13,7 @@ from NiChart_ViT.models.mae import (
 )
 from NiChart_ViT.models.vit import vit_base_patch16, vit_huge_patch14, vit_large_patch16
 from NiChart_ViT.trainer.mae_pretrain import train as mae_pretrain
-from NiChart_ViT.trainer.utils import get_rank, get_world_size, init_distributed_mode
+from NiChart_ViT.trainer.utils import init_distributed_mode
 
 # from NiChart_ViT.trainer.vit_finetune import train as vit_finetune
 
@@ -94,8 +94,8 @@ def run_mae_pretrain(args: Any) -> None:
     model = avail_models[args.model]
     model_without_ddp = model
 
-    num_tasks = get_world_size()
-    global_rank = get_rank()
+    num_tasks = args.world_size
+    global_rank = args.rank
     train_dataloader, test_dataloader, _ = create_dataloaders(
         in_dir=args.in_dir,
         batch_size=args.batch_size,
@@ -106,7 +106,7 @@ def run_mae_pretrain(args: Any) -> None:
         global_rank=global_rank if args.distributed else None,
     )
 
-    eff_batch_size = args.batch_size * get_world_size()
+    eff_batch_size = args.batch_size * args.world_size
     eff_lr = args.lr * eff_batch_size / 256
     print("Base lr: %.2e" % args.lr)
     print("Actual lr: %.2e" % eff_lr)
