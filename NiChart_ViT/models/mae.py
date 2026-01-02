@@ -270,7 +270,7 @@ def mae_vit_base_patch16_dec512d8b(**kwargs: Any) -> nn.Module:
 def mae_vit_large_patch16_dec512d8b(**kwargs: Any) -> nn.Module:
     model = MaskedAutoencoderViT(
         patch_size=8,
-        embed_dim=1024,
+        embed_dim=1056,
         depth=24,
         num_heads=16,
         decoder_embed_dim=512,
