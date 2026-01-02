@@ -249,6 +249,11 @@ def main() -> None:
     )
 
     mae_train.add_argument("--distributed", action="store_true")
+
+    mae_train.add_argument(
+        "--dist_url",
+        default="env://",
+    )
     mae_train.set_defaults(func=run_mae_pretrain)
 
     args = parser.parse_args()
