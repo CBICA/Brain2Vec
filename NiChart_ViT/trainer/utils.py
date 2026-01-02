@@ -9,6 +9,8 @@ import torch.distributed as dist
 
 
 def init_distributed_mode(args: Any) -> None:
+    os.environ["MASTER_ADDR"] = "localhost"
+    os.environ["MASTER_PORT"] = "12355"
     if "SLURM_PROCID" in os.environ:
         args.rank = int(os.environ["SLURM_PROCID"])
         args.gpu = args.rank % torch.accelerator.device_count()
