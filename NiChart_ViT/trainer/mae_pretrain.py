@@ -16,7 +16,7 @@ def train_step(
 
     mse = 0.0
 
-    for X in dataloader:
+    for X, _ in dataloader:
         X = X.to(device)
         X = X.float()
 
@@ -45,7 +45,7 @@ def test_step(
     mse = 0.0
 
     with torch.no_grad():
-        for X in dataloader:
+        for X, _ in dataloader:
             X = X.to(device)
             X = X.float()
 
