@@ -1,8 +1,63 @@
+import builtins
+import datetime
+import os
 from pathlib import Path
 from typing import Any
 
 import torch
 import torch.distributed as dist
+
+
+def init_distributed_mode(args: Any) -> None:
+    if "SLURM_PROCID" in os.environ:
+        args.rank = int(os.environ["SLURM_PROCID"])
+        args.gpu = args.rank % torch.accelerator.device_count()
+    else:
+        print("Nor using distributed mode")
+        setup_distributed(is_master=True)
+        args.distributed = False
+        return
+
+    args.distributed = True
+
+    torch.cuda.set_device(args.gpu)
+    args.dist_backend = "nccl"
+    print(
+        "| distributed init (rank {}): {}, gpu {}".format(
+            args.rank, args.dist_url, args.gpu
+        ),
+        flush=True,
+    )
+
+    torch.distributed.init_process_group(
+        backend=args.dist_backend,
+        init_method=args.dist_url,
+        world_size=args.world_size,
+        rank=args.rank,
+    )
+    torch.distributed.barrier()
+    setup_distributed(args.rank == 0)
+
+
+def setup_distributed(is_master: bool) -> None:
+    builtin_print = builtins.print
+
+    def print(*args, **kwargs):  # type: ignore
+        force = kwargs.pop("force", False)
+        force = force or (get_world_size() > 8)
+        if is_main_process() or force:
+            now = datetime.datetime.now().time()
+            builtin_print("[{}] ".format(now), end="")
+            builtin_print(*args, **kwargs)
+
+    builtins.print = print
+
+    os.environ["MASTER_ADDR"] = "localhost"
+    os.environ["MASTER_PORT"] = "12355"
+
+
+def cleanup_distributed() -> None:
+    dist.destroy_process_group()
 
 
 def get_world_size() -> int:
@@ -21,11 +76,6 @@ def get_rank() -> int:
 
 def is_main_process() -> bool:
     return get_rank() == 0
-
-
-def save_on_master(*args: Any, **kwargs: Any) -> None:
-    if is_main_process():
-        torch.save(*args, **kwargs)
 
 
 class EarlyStopper:
@@ -59,8 +109,14 @@ class EarlyStopper:
         return self.counter > self.patience
 
 
-def save_model(model: torch.nn.Module, target_dir: str, model_name: str) -> None:
+def save_on_master(*args: Any, **kwargs: Any) -> None:
+    if is_main_process():
+        torch.save(*args, **kwargs)
 
+
+def save_model(
+    model_without_ddp: torch.nn.Module, target_dir: str, model_name: str
+) -> None:
     target_dir_path = Path(target_dir)
     target_dir_path.mkdir(parents=True, exist_ok=True)
 
@@ -70,7 +126,7 @@ def save_model(model: torch.nn.Module, target_dir: str, model_name: str) -> None
     model_save_path = target_dir_path / model_name
 
     print(f"[INFO] Saving model to: {model_save_path}")
-    torch.save(obj=model.state_dict(), f=model_save_path)
+    save_on_master(obj=model_without_ddp.state_dict(), f=model_save_path)
 
 
 def load_weights(model: torch.nn.Module, model_weights: str, device: str) -> None:

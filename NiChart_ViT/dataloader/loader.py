@@ -124,6 +124,9 @@ def create_dataloaders(
     batch_size: int,
     label_dict_csv: str,
     target: str,
+    distributed: bool = False,
+    num_tasks: Optional[int] = None,
+    global_rank: Optional[int] = None,
 ) -> Any:
     """
     Creates the train, test and eval dataloader
@@ -175,33 +178,81 @@ def create_dataloaders(
         eval_loader = None
 
     if train_loader is not None:
-        train_dataloader = DataLoader(
-            train_loader,
-            batch_size=batch_size,
-            shuffle=True,
-            num_workers=os.cpu_count() // 4,  # type: ignore
-            collate_fn=lambda x: torch.utils.data.dataloader.default_collate(x),
-        )
+        if distributed:
+            assert num_tasks is not None
+            assert global_rank is not None
+            train_sampler = torch.utils.data.DistributedSampler(
+                train_loader,
+                num_replicas=num_tasks,
+                rank=global_rank,
+                shuffle=True,
+            )
+            train_dataloader = DataLoader(
+                train_loader,
+                sampler=train_sampler,
+                batch_size=batch_size,
+                num_workers=os.cpu_count() // 4,  # type: ignore
+            )
+        else:
+            train_dataloader = DataLoader(
+                train_loader,
+                batch_size=batch_size,
+                shuffle=True,
+                num_workers=os.cpu_count() // 4,  # type: ignore
+                collate_fn=lambda x: torch.utils.data.dataloader.default_collate(x),
+            )
     else:
         train_dataloader = None
 
     if test_loader is not None:
-        test_dataloader = DataLoader(
-            test_loader,
-            batch_size=batch_size,
-            num_workers=os.cpu_count() // 4,  # type: ignore
-            collate_fn=lambda x: torch.utils.data.dataloader.default_collate(x),
-        )
+        if distributed:
+            assert num_tasks is not None
+            assert global_rank is not None
+            test_sampler = torch.utils.data.DistributedSampler(
+                test_loader,
+                num_replicas=num_tasks,
+                rank=global_rank,
+                shuffle=True,
+            )
+            test_dataloader = DataLoader(
+                test_loader,
+                sampler=test_sampler,
+                batch_size=batch_size,
+                num_workers=os.cpu_count() // 4,  # type: ignore
+            )
+        else:
+            test_dataloader = DataLoader(
+                test_loader,
+                batch_size=batch_size,
+                num_workers=os.cpu_count() // 4,  # type: ignore
+                collate_fn=lambda x: torch.utils.data.dataloader.default_collate(x),
+            )
     else:
         test_dataloader = None
 
     if eval_loader is not None:
-        eval_dataloader = DataLoader(
-            eval_loader,
-            batch_size=1,
-            num_workers=os.cpu_count() // 4,  # type: ignore
-            collate_fn=lambda x: torch.utils.data.dataloader.default_collate(x),
-        )
+        if distributed:
+            assert num_tasks is not None
+            assert global_rank is not None
+            eval_sampler = torch.utils.data.DistributedSampler(
+                eval_loader,
+                num_replicas=num_tasks,
+                rank=global_rank,
+                shuffle=True,
+            )
+            eval_dataloader = DataLoader(
+                eval_loader,
+                sampler=eval_sampler,
+                batch_size=1,
+                num_workers=os.cpu_count() // 4,  # type: ignore
+            )
+        else:
+            eval_dataloader = DataLoader(
+                eval_loader,
+                batch_size=1,
+                num_workers=os.cpu_count() // 4,  # type: ignore
+                collate_fn=lambda x: torch.utils.data.dataloader.default_collate(x),
+            )
     else:
         eval_dataloader = None
 

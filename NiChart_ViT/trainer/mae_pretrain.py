@@ -20,14 +20,14 @@ def train_step(
         X = X.to(device)
         X = X.float()
 
+        optimizer.zero_grad()
+
         with torch.autocast(device_type=device, dtype=torch.float16):
             loss, _, _ = model(X)
 
         scaler.scale(loss).backward()
         scaler.step(optimizer)
         scaler.update()
-
-        optimizer.zero_grad()
 
         mse += loss.item()
 
@@ -60,6 +60,8 @@ def test_step(
 
 def train(
     model: torch.nn.Module,
+    model_without_ddp: torch.nn.Module,
+    distributed: bool,
     train_dataloader: DataLoader,
     test_dataloader: DataLoader,
     optimizer: torch.optim.Optimizer,
@@ -84,6 +86,10 @@ def train(
     scaler = torch.amp.GradScaler(device)
 
     for epoch in tqdm(range(epochs)):
+        if distributed:
+            train_dataloader.sampler.set_epoch(epoch)
+            test_dataloader.sampler.set_epoch(epoch)
+
         train_mse = train_step(
             model=model,
             dataloader=train_dataloader,
@@ -100,7 +106,7 @@ def train(
 
         if test_mse < best_res:
             best_res = test_mse
-            save_model(model, target_dir, model_name)
+            save_model(model_without_ddp, target_dir, model_name)
             if verbose:
                 print(
                     f"[INFO] New best model saved at {target_dir} with test MSE: {best_res:.4f}",
