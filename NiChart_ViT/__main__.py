@@ -141,7 +141,7 @@ def run_mae_pretrain(args: Any) -> None:
     )
 
 
-def arg_parse() -> None:
+def main() -> None:
     parser = argparse.ArgumentParser(
         prog="NiChart_ViT",
         add_help=False,
@@ -253,4 +253,4 @@ def arg_parse() -> None:
 
 
 if __name__ == "__main__":
-    arg_parse()
+    main()

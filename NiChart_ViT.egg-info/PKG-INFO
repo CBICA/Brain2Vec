@@ -1,4 +1,4 @@
-Metadata-Version: 2.2
+Metadata-Version: 2.4
 Name: NiChart_ViT
 Version: 0.0.1
 Summary: ViT Training for NiChart
@@ -36,6 +36,7 @@ Dynamic: download-url
 Dynamic: home-page
 Dynamic: keywords
 Dynamic: license
+Dynamic: license-file
 Dynamic: maintainer
 Dynamic: maintainer-email
 Dynamic: requires-dist
