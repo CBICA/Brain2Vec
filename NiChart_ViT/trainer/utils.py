@@ -54,9 +54,6 @@ def setup_distributed(is_master: bool) -> None:
 
     builtins.print = print
 
-    os.environ["MASTER_ADDR"] = "localhost"
-    os.environ["MASTER_PORT"] = "12355"
-
 
 def get_world_size() -> int:
     if not dist.is_available() or not dist.is_initialized():
