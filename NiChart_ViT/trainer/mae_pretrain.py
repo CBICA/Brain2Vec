@@ -9,7 +9,6 @@ def train_step(
     model: torch.nn.Module,
     dataloader: DataLoader,
     optimizer: torch.optim.Optimizer,
-    scaler: torch.amp.GradScaler,
     device: str,
 ) -> float:
     model.train(True)
@@ -25,9 +24,9 @@ def train_step(
         with torch.cuda.amp.autocast():
             loss, _, _ = model(X)
 
-        scaler.scale(loss).backward()
-        scaler.step(optimizer)
-        scaler.update()
+        loss.backward()
+
+        optimizer.step()
 
         mse += loss.item()
 
@@ -85,8 +84,6 @@ def train(
         increase=False,
     )
 
-    scaler = torch.amp.GradScaler(device)
-
     for epoch in tqdm(range(epochs)):
         if distributed:
             train_dataloader.sampler.set_epoch(epoch)
@@ -96,7 +93,6 @@ def train(
             model=model,
             dataloader=train_dataloader,
             optimizer=optimizer,
-            scaler=scaler,
             device=device,
         )
 
