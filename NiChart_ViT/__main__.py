@@ -251,6 +251,9 @@ def main() -> None:
     mae_train.add_argument("--distributed", action="store_true")
     mae_train.set_defaults(func=run_mae_pretrain)
 
+    args = parser.parse_args()
+    args.func(args)
+
 
 if __name__ == "__main__":
     main()
