@@ -143,7 +143,7 @@ def run_mae_pretrain(args: Any) -> None:
         patience=args.patience,
         target_dir=args.out_dir,
         model_name=args.model_name,
-        device=args.device,
+        device=args.gpu,
         verbose=args.verbose,
     )
 

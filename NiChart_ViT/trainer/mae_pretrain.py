@@ -2,7 +2,7 @@ import torch
 from torch.utils.data import DataLoader
 from tqdm.auto import tqdm
 
-from NiChart_ViT.trainer.utils import EarlyStopper, save_model
+from NiChart_ViT.trainer.utils import EarlyStopper, all_reduce_mean, save_model
 
 
 def train_step(
@@ -10,6 +10,7 @@ def train_step(
     dataloader: DataLoader,
     optimizer: torch.optim.Optimizer,
     device: str,
+    distributed: bool = False,
 ) -> float:
     model.train(True)
 
@@ -33,6 +34,9 @@ def train_step(
         torch.cuda.synchronize()
 
     mse /= float(len(dataloader))
+    if distributed:
+        mse = all_reduce_mean(mse)
+
     return mse
 
 
@@ -40,6 +44,7 @@ def test_step(
     model: torch.nn.Module,
     dataloader: DataLoader,
     device: str,
+    distributed: bool = False,
 ) -> float:
     model.eval()
 
@@ -56,6 +61,9 @@ def test_step(
             mse += loss.item()
 
     mse /= float(len(dataloader))
+    if distributed:
+        mse = all_reduce_mean(mse)
+
     return mse
 
 
@@ -94,12 +102,14 @@ def train(
             dataloader=train_dataloader,
             optimizer=optimizer,
             device=device,
+            distributed=distributed,
         )
 
         test_mse = test_step(
             model=model,
             dataloader=test_dataloader,
             device=device,
+            distributed=distributed,
         )
 
         if test_mse < best_res:

@@ -125,6 +125,17 @@ def save_on_master(*args: Any, **kwargs: Any) -> None:
         torch.save(*args, **kwargs)
 
 
+def all_reduce_mean(x: Any) -> Any:
+    world_size = get_world_size()
+    if world_size > 1:
+        x_reduce = torch.tensor(x).cuda()
+        dist.all_reduce(x_reduce)
+        x_reduce /= world_size
+        return x_reduce.item()
+    else:
+        return x
+
+
 def save_model(
     model_without_ddp: torch.nn.Module, target_dir: str, model_name: str
 ) -> None:
