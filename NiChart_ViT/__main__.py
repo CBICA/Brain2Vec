@@ -251,6 +251,13 @@ def main() -> None:
     mae_train.add_argument("--distributed", action="store_true")
 
     mae_train.add_argument(
+        "--world_size",
+        type=int,
+        default=1,
+        required=False,
+    )
+
+    mae_train.add_argument(
         "--dist_url",
         default="env://",
     )
