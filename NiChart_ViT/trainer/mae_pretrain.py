@@ -22,7 +22,7 @@ def train_step(
 
         optimizer.zero_grad()
 
-        with torch.cuda.amp.autocast():
+        with torch.autocast(device_type="cuda", dtype=torch.bfloat16):
             loss, _, _ = model(X)
 
         loss.backward()
@@ -55,7 +55,7 @@ def test_step(
             X = X.to(device)
             X = X.float()
 
-            with torch.cuda.amp.autocast():
+            with torch.autocast(device_type="cuda", dtype=torch.bfloat16):
                 loss, _, _ = model(X)
 
             mse += loss.item()
