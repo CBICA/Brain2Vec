@@ -88,7 +88,7 @@ def run_mae_pretrain(args: Any) -> None:
 
     avail_models = available_models(img_size=args.img_size, device=args.device)
     assert args.model in avail_models.keys()
-    
+
     init_distributed_mode(args)
 
     model = avail_models[args.model]
