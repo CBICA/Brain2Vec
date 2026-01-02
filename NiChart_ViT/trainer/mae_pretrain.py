@@ -22,7 +22,7 @@ def train_step(
 
         optimizer.zero_grad()
 
-        with torch.autocast(device_type=device, dtype=torch.float16):
+        with torch.cuda.amp.autocast():
             loss, _, _ = model(X)
 
         scaler.scale(loss).backward()
@@ -51,7 +51,7 @@ def test_step(
             X = X.to(device)
             X = X.float()
 
-            with torch.autocast(device_type=device, dtype=torch.float16):
+            with torch.cuda.amp.autocast():
                 loss, _, _ = model(X)
 
             mse += loss.item()
@@ -110,7 +110,7 @@ def train(
             best_res = test_mse
             save_model(model_without_ddp, target_dir, model_name)
             if verbose:
-                print(
+                print(  # type: ignore
                     f"[INFO] New best model saved at {target_dir} with test MSE: {best_res:.4f}",
                     force=True,
                     flush=True,
@@ -121,7 +121,7 @@ def train(
                 break
 
         if verbose:
-            print(
+            print(  # type: ignore
                 f"Epoch: {epoch + 1} | "
                 f"train_mse: {train_mse:.4f} | "
                 f"test_mse: {test_mse:.4f}",

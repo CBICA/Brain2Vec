@@ -114,10 +114,10 @@ def run_mae_pretrain(args: Any) -> None:
 
     eff_batch_size = args.batch_size * args.world_size
     eff_lr = args.lr * eff_batch_size / 256
-    print("Base lr: %.2e" % args.lr, force=True, flush=True)
-    print("Actual lr: %.2e" % eff_lr, force=True, flush=True)
+    print("Base lr: %.2e" % args.lr, force=True, flush=True)  # type: ignore
+    print("Actual lr: %.2e" % eff_lr, force=True, flush=True)  # type: ignore
 
-    print(f"effective batch size: {eff_batch_size}", force=True, flush=True)
+    print(f"effective batch size: {eff_batch_size}", force=True, flush=True)  # type: ignore
 
     if args.distributed:
         model = torch.nn.parallel.DistributedDataParallel(
