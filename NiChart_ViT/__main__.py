@@ -88,10 +88,16 @@ def run_mae_pretrain(args: Any) -> None:
 
     avail_models = available_models(img_size=args.img_size, device=args.device)
     assert args.model in avail_models.keys()
-
+    
     init_distributed_mode(args)
 
     model = avail_models[args.model]
+    if args.distributed:
+        torch.cuda.set_device(args.gpu)
+        model = model.cuda(args.gpu)
+    else:
+        model = model.to(args.device)
+
     model_without_ddp = model
 
     num_tasks = args.world_size
@@ -108,10 +114,10 @@ def run_mae_pretrain(args: Any) -> None:
 
     eff_batch_size = args.batch_size * args.world_size
     eff_lr = args.lr * eff_batch_size / 256
-    print("Base lr: %.2e" % args.lr)
-    print("Actual lr: %.2e" % eff_lr)
+    print("Base lr: %.2e" % args.lr, force=True, flush=True)
+    print("Actual lr: %.2e" % eff_lr, force=True, flush=True)
 
-    print(f"effective batch size: {eff_batch_size}")
+    print(f"effective batch size: {eff_batch_size}", force=True, flush=True)
 
     if args.distributed:
         model = torch.nn.parallel.DistributedDataParallel(

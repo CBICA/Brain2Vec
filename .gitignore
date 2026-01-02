@@ -8,9 +8,8 @@
 # model weights(will exist on hugging face)
 *.pth
 
-# job.sh for cluster usage
-job.sh
-eval.sh
+# .sh jobs for the cluster
+*.sh
 
 # images
 *.png

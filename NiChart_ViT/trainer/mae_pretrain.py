@@ -31,6 +31,8 @@ def train_step(
 
         mse += loss.item()
 
+        torch.cuda.synchronize()
+
     mse /= float(len(dataloader))
     return mse
 
@@ -110,6 +112,8 @@ def train(
             if verbose:
                 print(
                     f"[INFO] New best model saved at {target_dir} with test MSE: {best_res:.4f}",
+                    force=True,
+                    flush=True,
                 )
             if early_stopper.early_stop(test_mse):
                 if verbose:
@@ -120,7 +124,9 @@ def train(
             print(
                 f"Epoch: {epoch + 1} | "
                 f"train_mse: {train_mse:.4f} | "
-                f"test_mse: {test_mse:.4f}"
+                f"test_mse: {test_mse:.4f}",
+                force=True,
+                flush=True,
             )
 
         results["train_mse"].append(train_mse)
