@@ -110,10 +110,8 @@ def train(
             best_res = test_mse
             save_model(model_without_ddp, target_dir, model_name)
             if verbose:
-                print(  # type: ignore
+                print(
                     f"[INFO] New best model saved at {target_dir} with test MSE: {best_res:.4f}",
-                    force=True,
-                    flush=True,
                 )
             if early_stopper.early_stop(test_mse):
                 if verbose:
@@ -121,12 +119,10 @@ def train(
                 break
 
         if verbose:
-            print(  # type: ignore
+            print(
                 f"Epoch: {epoch + 1} | "
                 f"train_mse: {train_mse:.4f} | "
                 f"test_mse: {test_mse:.4f}",
-                force=True,
-                flush=True,
             )
 
         results["train_mse"].append(train_mse)
