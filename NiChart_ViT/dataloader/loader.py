@@ -87,15 +87,15 @@ class NiftiLoader(Dataset):
         transforms = []
         if self.data_augmentation:
             if self.mode == "train":
-                if random.randint(0, 2):
+                if random.randint(0, 4) == 1:
                     transforms.append(tio.RandomBlur(2))
-                if random.randint(0, 2):
+                if random.randint(0, 4) == 1:
                     transforms.append(tio.RandomGamma(0.3))
-                if random.randint(0, 2):
+                if random.randint(0, 4) == 1:
                     transforms.append(tio.RandomFlip(axes=("LR",)))
-                if random.randint(0, 2):
+                if random.randint(0, 4) == 1:
                     transforms.append(tio.RandomNoise(mean=0, std=2))
-                if random.randint(0, 2):
+                if random.randint(0, 4) == 1:
                     transforms.append(
                         tio.Affine(
                             scales=(1, 1, 1),
