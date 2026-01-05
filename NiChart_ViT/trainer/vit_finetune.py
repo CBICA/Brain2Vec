@@ -91,7 +91,7 @@ def train_step(
         optimizer.zero_grad()
 
         # make prediction
-        with torch.autocast(device_type=device, dtype=torch.bfloat16):
+        with torch.autocast(device_type="cuda", dtype=torch.bfloat16):
             y_pred = model(X).squeeze()
 
             # loss computation
@@ -216,7 +216,7 @@ def test_step(
             else:
                 X, y = X.float(), y.long()
 
-            with torch.autocast(device_type=device, dtype=torch.bfloat16):
+            with torch.autocast(device_type="cuda", dtype=torch.bfloat16):
                 test_pred = model(X).squeeze()
                 loss = loss_fn(test_pred, y)
 

@@ -198,7 +198,7 @@ def run_vit_finetune(args: Any) -> None:
         in_dir=args.in_dir,
         batch_size=args.batch_size,
         label_dict_csv=args.label_dict,
-        target="Age",
+        target=args.target,
         distributed=args.distributed,
         num_tasks=num_tasks if args.distributed else None,
         global_rank=global_rank if args.distributed else None,
@@ -401,6 +401,12 @@ def main() -> None:
         type=int,
         default=-1,
         required=False,
+    )
+
+    vit_finetune.add_argument(
+        "--target",
+        type=str,
+        required=True,
     )
 
     vit_finetune.add_argument(
