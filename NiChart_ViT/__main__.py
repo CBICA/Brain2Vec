@@ -23,44 +23,25 @@ def available_models(
     device: str = "cuda",
 ) -> dict:
     return {
-        "mae_base": torch.compile(
-            mae_vit_base_patch16_dec512d8b(img_size=img_size).to(device), dynamic=False
+        "mae_base": mae_vit_base_patch16_dec512d8b(img_size=img_size).to(device),
+        "mae_large": mae_vit_large_patch16_dec512d8b(img_size=img_size).to(device),
+        "mae_huge": mae_vit_huge_patch14_dec512d8b(img_size=img_size).to(device),
+        "vit_base": (
+            vit_base_patch16(img_size=img_size)
+            if num_classes is None
+            else vit_base_patch16(img_size=img_size, num_classes=num_classes).to(device)
         ),
-        "mae_large": torch.compile(
-            mae_vit_large_patch16_dec512d8b(img_size=img_size).to(device), dynamic=False
+        "vit_large": (
+            vit_large_patch16(img_size=img_size)
+            if num_classes is None
+            else vit_large_patch16(img_size=img_size, num_classes=num_classes).to(
+                device
+            )
         ),
-        "mae_huge": torch.compile(
-            mae_vit_huge_patch14_dec512d8b(img_size=img_size).to(device), dynamic=False
-        ),
-        "vit_base": torch.compile(
-            (
-                vit_base_patch16(img_size=img_size)
-                if num_classes is None
-                else vit_base_patch16(img_size=img_size, num_classes=num_classes).to(
-                    device
-                )
-            ),
-            dynamic=False,
-        ),
-        "vit_large": torch.compile(
-            (
-                vit_large_patch16(img_size=img_size)
-                if num_classes is None
-                else vit_large_patch16(img_size=img_size, num_classes=num_classes).to(
-                    device
-                )
-            ),
-            dynamic=False,
-        ),
-        "vit_huge": torch.compile(
-            (
-                vit_huge_patch14(img_size=img_size)
-                if num_classes is None
-                else vit_huge_patch14(img_size=img_size, num_classes=num_classes).to(
-                    device
-                )
-            ),
-            dynamic=False,
+        "vit_huge": (
+            vit_huge_patch14(img_size=img_size)
+            if num_classes is None
+            else vit_huge_patch14(img_size=img_size, num_classes=num_classes).to(device)
         ),
     }
 
