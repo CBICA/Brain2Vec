@@ -173,7 +173,11 @@ def run_vit_finetune(args: Any) -> None:
     assert args.epochs > 0
     assert args.patience >= 0 and args.patience < args.epochs
 
-    avail_models = available_models(img_size=args.img_size, device=args.device)
+    avail_models = available_models(
+        img_size=args.img_size,
+        num_classes=1 if args.num_classes == -1 else args.num_classes,
+        device=args.device,
+    )
     assert args.model in avail_models.keys()
 
     init_distributed_mode(args)
@@ -238,6 +242,7 @@ def run_vit_finetune(args: Any) -> None:
         loss_fn=loss_fn,
         epochs=args.epochs,
         patience=args.patience,
+        num_classes=None if args.num_classes == -1 else args.num_classes,
         target_dir=args.out_dir,
         model_name=args.model_name,
         device=args.gpu,
@@ -388,6 +393,13 @@ def main() -> None:
         "--model",
         type=str,
         default="vit_base",
+        required=False,
+    )
+
+    vit_finetune.add_argument(
+        "--num_classes",
+        type=int,
+        default=-1,
         required=False,
     )
 
