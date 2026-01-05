@@ -128,10 +128,6 @@ def train_step(
         stats["train_r2"] = r2_score.compute().item()
         if distributed:
             stats["train_mae"] = all_reduce_mean(stats["train_mae"])
-            stats["train_mse"] = all_reduce_mean(stats["train_mse"])
-            stats["train_nrmse"] = all_reduce_mean(stats["train_mse"])
-            stats["train_r2"] = all_reduce_mean(stats["train_mse"])
-            stats["train_mse"] = all_reduce_mean(stats["train_mse"])
     else:
         stats["train_acc"] = acc.compute().item()
         stats["train_auc"] = auc.compute().item()
@@ -139,13 +135,6 @@ def train_step(
         stats["train_precision"] = precision.compute().item()
         stats["train_specificity"] = specificity.compute().item()
         stats["train_f1"] = f1_score.compute().item()
-        if distributed:
-            stats["train_acc"] = all_reduce_mean(stats["train_acc"])
-            stats["train_auc"] = all_reduce_mean(stats["train_auc"])
-            stats["train_recall"] = all_reduce_mean(stats["train_recall"])
-            stats["train_precision"] = all_reduce_mean(stats["train_precision"])
-            stats["train_specificity"] = all_reduce_mean(stats["train_specificity"])
-            stats["train_f1"] = all_reduce_mean(stats["train_f1"])
 
     return stats
 
@@ -246,10 +235,6 @@ def test_step(
         stats["test_r2"] = r2_score.compute().item()
         if distributed:
             stats["test_mae"] = all_reduce_mean(stats["test_mae"])
-            stats["test_mse"] = all_reduce_mean(stats["test_mse"])
-            stats["test_nrmse"] = all_reduce_mean(stats["test_mse"])
-            stats["test_r2"] = all_reduce_mean(stats["test_mse"])
-            stats["test_mse"] = all_reduce_mean(stats["test_mse"])
     else:
         stats["test_acc"] = acc.compute().item()
         stats["test_auc"] = auc.compute().item()
@@ -257,13 +242,6 @@ def test_step(
         stats["test_precision"] = precision.compute().item()
         stats["test_specificity"] = specificity.compute().item()
         stats["test_f1"] = f1_score.compute().item()
-        if distributed:
-            stats["test_acc"] = all_reduce_mean(stats["test_acc"])
-            stats["test_auc"] = all_reduce_mean(stats["test_auc"])
-            stats["test_recall"] = all_reduce_mean(stats["test_recall"])
-            stats["test_precision"] = all_reduce_mean(stats["test_precision"])
-            stats["test_specificity"] = all_reduce_mean(stats["test_specificity"])
-            stats["test_f1"] = all_reduce_mean(stats["test_f1"])
 
     return stats
 
