@@ -17,7 +17,7 @@ from torchmetrics import (
 from tqdm.auto import tqdm
 from typing_extensions import Literal
 
-from NiChart_ViT.trainer.utils import EarlyStopper, save_model
+from NiChart_ViT.trainer.utils import EarlyStopper, all_reduce_mean, save_model
 
 
 def train_step(
@@ -26,11 +26,11 @@ def train_step(
     dataloader: DataLoader,
     loss_fn: torch.nn.Module,
     optimizer: torch.optim.Optimizer,
-    scaler: torch.amp.GradScaler,
     num_classes: Optional[int] = None,
     device: Literal["cuda", "mps", "cpu"] = "cuda",
+    distributed: bool = False,
 ) -> dict:
-    model.train()
+    model.train(True)
 
     if mode == "regression":
         assert num_classes is None
@@ -91,17 +91,17 @@ def train_step(
         optimizer.zero_grad()
 
         # make prediction
-        with torch.autocast(device_type=device, dtype=torch.float16):
+        with torch.autocast(device_type=device, dtype=torch.bfloat16):
             y_pred = model(X).squeeze()
 
             # loss computation
             loss = loss_fn(y_pred, y)
 
-        scaler.unscale_(optimizer)
-        torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
-        scaler.scale(loss).backward()
-        scaler.step(optimizer)
-        scaler.update()
+        loss.backward()
+
+        optimizer.step()
+
+        torch.cuda.synchronize()
 
         if mode == "regression":
             stats["train_mae"] += loss.item()
@@ -126,6 +126,12 @@ def train_step(
         stats["train_mse"] = mse.compute().item()
         stats["train_nrmse"] = nrmse.compute().item()
         stats["train_r2"] = r2_score.compute().item()
+        if distributed:
+            stats["train_mae"] = all_reduce_mean(stats["train_mae"])
+            stats["train_mse"] = all_reduce_mean(stats["train_mse"])
+            stats["train_nrmse"] = all_reduce_mean(stats["train_mse"])
+            stats["train_r2"] = all_reduce_mean(stats["train_mse"])
+            stats["train_mse"] = all_reduce_mean(stats["train_mse"])
     else:
         stats["train_acc"] = acc.compute().item()
         stats["train_auc"] = auc.compute().item()
@@ -133,6 +139,13 @@ def train_step(
         stats["train_precision"] = precision.compute().item()
         stats["train_specificity"] = specificity.compute().item()
         stats["train_f1"] = f1_score.compute().item()
+        if distributed:
+            stats["train_acc"] = all_reduce_mean(stats["train_acc"])
+            stats["train_auc"] = all_reduce_mean(stats["train_auc"])
+            stats["train_recall"] = all_reduce_mean(stats["train_recall"])
+            stats["train_precision"] = all_reduce_mean(stats["train_precision"])
+            stats["train_specificity"] = all_reduce_mean(stats["train_specificity"])
+            stats["train_f1"] = all_reduce_mean(stats["train_f1"])
 
     return stats
 
@@ -144,6 +157,7 @@ def test_step(
     loss_fn: torch.nn.Module,
     num_classes: Optional[int] = None,
     device: Literal["cuda", "mps", "cpu"] = "cuda",
+    distributed: bool = False,
 ) -> dict:
     # eval mode
     model.eval()
@@ -202,7 +216,7 @@ def test_step(
             else:
                 X, y = X.float(), y.long()
 
-            with torch.autocast(device_type=device, dtype=torch.float16):
+            with torch.autocast(device_type=device, dtype=torch.bfloat16):
                 test_pred = model(X).squeeze()
                 loss = loss_fn(test_pred, y)
 
@@ -226,24 +240,38 @@ def test_step(
                 confmat.update(y_pred_classes, y)
 
     if mode == "regression":
-        stats["test_mae"] = stats["test_mae"] / float(len(dataloader))
-        stats["test_mse"] = mse.compute().item()
-        stats["test_nrmse"] = nrmse.compute().item()
-        stats["test_r2"] = r2_score.compute().item()
+        stats["train_mae"] = stats["train_mae"] / float(len(dataloader))
+        stats["train_mse"] = mse.compute().item()
+        stats["train_nrmse"] = nrmse.compute().item()
+        stats["train_r2"] = r2_score.compute().item()
+        if distributed:
+            stats["train_mae"] = all_reduce_mean(stats["train_mae"])
+            stats["train_mse"] = all_reduce_mean(stats["train_mse"])
+            stats["train_nrmse"] = all_reduce_mean(stats["train_mse"])
+            stats["train_r2"] = all_reduce_mean(stats["train_mse"])
+            stats["train_mse"] = all_reduce_mean(stats["train_mse"])
     else:
-        stats["test_acc"] = acc.compute().item()
-        stats["test_auc"] = auc.compute().item()
-        stats["test_recall"] = recall.compute().item()
-        stats["test_precision"] = precision.compute().item()
-        stats["test_specificity"] = specificity.compute().item()
-        stats["test_f1"] = f1_score.compute().item()
-        stats["test_confussion_matrix"] = confmat.compute().cpu().numpy()
+        stats["train_acc"] = acc.compute().item()
+        stats["train_auc"] = auc.compute().item()
+        stats["train_recall"] = recall.compute().item()
+        stats["train_precision"] = precision.compute().item()
+        stats["train_specificity"] = specificity.compute().item()
+        stats["train_f1"] = f1_score.compute().item()
+        if distributed:
+            stats["train_acc"] = all_reduce_mean(stats["train_acc"])
+            stats["train_auc"] = all_reduce_mean(stats["train_auc"])
+            stats["train_recall"] = all_reduce_mean(stats["train_recall"])
+            stats["train_precision"] = all_reduce_mean(stats["train_precision"])
+            stats["train_specificity"] = all_reduce_mean(stats["train_specificity"])
+            stats["train_f1"] = all_reduce_mean(stats["train_f1"])
 
     return stats
 
 
 def train(
     model: torch.nn.Module,
+    model_without_ddp: torch.nn.Module,
+    distributed: bool,
     mode: str,
     train_dataloader: DataLoader,
     test_dataloader: DataLoader,
@@ -295,9 +323,11 @@ def train(
         patience=patience, increase=True if (mode != "regression") else False
     )
 
-    scaler = torch.amp.GradScaler(device)
-
     for epoch in tqdm(range(epochs)):
+        if distributed:
+            train_dataloader.sampler.set_epoch(epoch)
+            test_dataloader.sampler.set_epoch(epoch)
+
         train_stats = train_step(
             model=model,
             mode=mode,
@@ -305,8 +335,8 @@ def train(
             loss_fn=loss_fn,
             optimizer=optimizer,
             device=device,
-            scaler=scaler,
             num_classes=num_classes if num_classes is not None else None,
+            distributed=distributed,
         )
 
         test_stats = test_step(
@@ -316,12 +346,13 @@ def train(
             loss_fn=loss_fn,
             device=device,
             num_classes=num_classes if num_classes is not None else None,
+            distributed=distributed,
         )
 
         if mode == "regression":
             if test_stats["test_mae"] < best_res:
                 best_res = test_stats["test_mae"]
-                save_model(model, target_dir, model_name)
+                save_model(model_without_ddp, target_dir, model_name)
                 if verbose:
                     print(
                         f"[INFO] New best model saved at {target_dir} with test MAE: {best_res:.4f}"

@@ -158,4 +158,6 @@ def load_weights(model: torch.nn.Module, model_weights: str, device: str) -> Non
     total_model_keys = len(model.state_dict().keys())
     loaded_keys = total_model_keys - len(missing_keys)
 
-    print(f"Successfully loaded: {loaded_keys} | Total missing keys: {missing_keys}")
+    print(
+        f"Successfully loaded: {loaded_keys} | Total missing keys: {missing_keys} | Total unexpected keys: {unexpected_keys}"
+    )
