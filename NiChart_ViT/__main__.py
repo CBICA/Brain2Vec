@@ -490,6 +490,11 @@ def main() -> None:
         action="store_true",
     )
 
+    vit_finetune.add_argument(
+        "--dist_url",
+        default="env://",
+    )
+
     vit_finetune.add_argument("--distributed", action="store_true")
     vit_finetune.set_defaults(func=run_vit_finetune)
 
