@@ -301,6 +301,8 @@ def train(
         patience=patience, increase=True if (mode != "regression") else False
     )
 
+    lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=epochs)
+
     for epoch in tqdm(range(epochs)):
         if distributed:
             train_dataloader.sampler.set_epoch(epoch)
@@ -326,6 +328,8 @@ def train(
             num_classes=num_classes if num_classes is not None else None,
             distributed=distributed,
         )
+
+        lr_scheduler.step()
 
         if mode == "regression":
             if test_stats["test_mae"] < best_res:
