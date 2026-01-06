@@ -122,9 +122,9 @@ def create_dataloaders(
     model: str,
     in_dir: str,
     batch_size: int,
-    label_dict_csv: str,
     target: str,
     distributed: bool = False,
+    label_dict_csv: Optional[str] = None,
     num_tasks: Optional[int] = None,
     global_rank: Optional[int] = None,
 ) -> Any:
@@ -145,15 +145,16 @@ def create_dataloaders(
     test_dir = f"{in_dir}/test"
     eval_dir = f"{in_dir}/eval"
 
-    in_csv = pd.read_csv(label_dict_csv)
-
-    label_dict = {row["MRID"]: row[target] for _, row in in_csv.iterrows()}
+    if model != "mae":
+        assert label_dict_csv is not None
+        in_csv = pd.read_csv(label_dict_csv)
+        label_dict = {row["MRID"]: row[target] for _, row in in_csv.iterrows()}
 
     if os.path.isdir(train_dir):
         train_loader = NiftiLoader(
             mode="pretrain" if model == "mae" else "train",
             in_dir=train_dir,
-            label_dict=label_dict,
+            label_dict=None if model == "mae" else label_dict,
             data_augmentation=True,
         )
     else:
@@ -163,7 +164,7 @@ def create_dataloaders(
         test_loader = NiftiLoader(
             mode="inference",
             in_dir=test_dir,
-            label_dict=label_dict,
+            label_dict=None if model == "mae" else label_dict,
             data_augmentation=False,
         )
     else:
@@ -173,7 +174,7 @@ def create_dataloaders(
         eval_loader = NiftiLoader(
             mode="inference",
             in_dir=eval_dir,
-            label_dict=label_dict,
+            label_dict=None if model == "mae" else label_dict,
             data_augmentation=False,
         )
     else:

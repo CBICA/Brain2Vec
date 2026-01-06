@@ -105,7 +105,6 @@ def run_mae_pretrain(args: Any) -> None:
         model="mae",
         in_dir=args.in_dir,
         batch_size=args.batch_size,
-        label_dict_csv=args.label_dict,
         target="Age",
         distributed=args.distributed,
         num_tasks=num_tasks if args.distributed else None,
@@ -260,12 +259,6 @@ def main() -> None:
 
     mae_train.add_argument(
         "--in_dir",
-        type=str,
-        required=True,
-    )
-
-    mae_train.add_argument(
-        "--label_dict",
         type=str,
         required=True,
     )
