@@ -92,6 +92,8 @@ def train(
         increase=False,
     )
 
+    lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=epochs)
+
     for epoch in tqdm(range(epochs)):
         if distributed:
             train_dataloader.sampler.set_epoch(epoch)
@@ -111,6 +113,8 @@ def train(
             device=device,
             distributed=distributed,
         )
+
+        lr_scheduler.step()
 
         if test_mse < best_res:
             best_res = test_mse
