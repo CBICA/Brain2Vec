@@ -57,7 +57,7 @@ def select_optimizer(
             params=model.parameters(),
             lr=lr,
             weight_decay=weight_decay,
-            amsgrad=True,
+            betas=(0.9, 0.95),
         ),
         "Adadelta": torch.optim.Adadelta(
             params=model.parameters(),
