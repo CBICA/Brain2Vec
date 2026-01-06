@@ -102,6 +102,7 @@ def run_mae_pretrain(args: Any) -> None:
     num_tasks = args.world_size
     global_rank = args.rank
     train_dataloader, test_dataloader, _ = create_dataloaders(
+        model="mae",
         in_dir=args.in_dir,
         batch_size=args.batch_size,
         label_dict_csv=args.label_dict,
@@ -176,6 +177,7 @@ def run_vit_finetune(args: Any) -> None:
     global_rank = args.rank
 
     train_dataloader, test_dataloader, _ = create_dataloaders(
+        model="vit",
         in_dir=args.in_dir,
         batch_size=args.batch_size,
         label_dict_csv=args.label_dict,

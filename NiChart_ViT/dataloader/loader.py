@@ -17,7 +17,7 @@ class NiftiLoader(Dataset):
     """
     Class for the SingleSubject Dataloader. Returns the input tensor with it's label(as a torch.tensor)
 
-    :param mode: train, evaluate or inference
+    :param mode: train, pretrain(for MAE) or inference
     :type mode: str
     :param in_dir: The input directory that contains train/ test/ and eval/ folders
     :type in_dir: str
@@ -29,21 +29,19 @@ class NiftiLoader(Dataset):
 
     def __init__(
         self,
-        mode: Literal["train", "evaluate", "inference"],
+        mode: Literal["train", "pretrain", "inference"],
         in_dir: str,
         label_dict: Optional[dict] = None,
         data_augmentation: bool = False,
     ) -> None:
         super().__init__()
 
-        assert mode in ["train", "evaluate", "inference"]
+        assert mode in ["train", "pretrain", "inference"]
         if label_dict is not None:
-            assert (
-                mode != "inference"
-            ), "Can't perform inference with a passed label dict."
+            assert mode == "train", "Can't perform inference with a passed label dict."
         else:
             assert (
-                mode == "inference"
+                mode != "train"
             ), "Can't perform training or evaluation without a label dict."
 
         self.in_dir = Path(in_dir)
@@ -54,7 +52,7 @@ class NiftiLoader(Dataset):
         self.img_label: list = []
         self.mrids: list = []
         self._fetch_images()
-        if mode != "inference":
+        if mode == "train":
             self._fetch_labels()
 
     def _fetch_images(self) -> None:
@@ -74,7 +72,7 @@ class NiftiLoader(Dataset):
         return len(self.images)
 
     def __getitem__(self, index: int) -> Any:
-        if self.mode != "inference":
+        if self.mode == "train":
             img_path, label = self.img_label[index]
         else:
             img_path = self.images[index]
@@ -114,13 +112,14 @@ class NiftiLoader(Dataset):
 
         img_tensor = torch.tensor(img.data, dtype=torch.float32)
 
-        if self.mode != "inference":
+        if self.mode == "train":
             return img_tensor, torch.tensor(label, dtype=torch.float32)
         else:
             return img_tensor, mrid
 
 
 def create_dataloaders(
+    model: str,
     in_dir: str,
     batch_size: int,
     label_dict_csv: str,
@@ -132,6 +131,8 @@ def create_dataloaders(
     """
     Creates the train, test and eval dataloader
 
+    :param model: Either mae or vit
+    :type model: str
     :param in_dir: The input directory that contains train/ test/ and eval/ folders
     :type in_dir: str
     :param batch_size: The passed batch_size that the data will be splitted into
@@ -150,7 +151,7 @@ def create_dataloaders(
 
     if os.path.isdir(train_dir):
         train_loader = NiftiLoader(
-            mode="train",
+            mode="pretrain" if model == "mae" else "train",
             in_dir=train_dir,
             label_dict=label_dict,
             data_augmentation=True,
@@ -160,7 +161,7 @@ def create_dataloaders(
 
     if os.path.isdir(test_dir):
         test_loader = NiftiLoader(
-            mode="evaluate",
+            mode="inference",
             in_dir=test_dir,
             label_dict=label_dict,
             data_augmentation=False,
@@ -170,7 +171,7 @@ def create_dataloaders(
 
     if os.path.isdir(eval_dir):
         eval_loader = NiftiLoader(
-            mode="evaluate",
+            mode="inference",
             in_dir=eval_dir,
             label_dict=label_dict,
             data_augmentation=False,
