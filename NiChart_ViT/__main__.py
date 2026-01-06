@@ -7,11 +7,11 @@ from torch.distributed import destroy_process_group
 
 from NiChart_ViT.dataloader.loader import create_dataloaders
 from NiChart_ViT.models.mae import (
-    mae_vit_base_patch16_dec512d8b,
-    mae_vit_huge_patch14_dec512d8b,
-    mae_vit_large_patch16_dec512d8b,
+    mae_vit_base_patch8_dec512d8b,
+    mae_vit_huge_patch8_dec512d8b,
+    mae_vit_large_patch8_dec512d8b,
 )
-from NiChart_ViT.models.vit import vit_base_patch16, vit_huge_patch14, vit_large_patch16
+from NiChart_ViT.models.vit import vit_base_patch8, vit_huge_patch8, vit_large_patch8
 from NiChart_ViT.trainer.mae_pretrain import train as mae_pretrain
 from NiChart_ViT.trainer.utils import init_distributed_mode, load_weights
 from NiChart_ViT.trainer.vit_finetune import train as vit_finetune
@@ -23,25 +23,23 @@ def available_models(
     device: str = "cuda",
 ) -> dict:
     return {
-        "mae_base": mae_vit_base_patch16_dec512d8b(img_size=img_size).to(device),
-        "mae_large": mae_vit_large_patch16_dec512d8b(img_size=img_size).to(device),
-        "mae_huge": mae_vit_huge_patch14_dec512d8b(img_size=img_size).to(device),
+        "mae_base": mae_vit_base_patch8_dec512d8b(img_size=img_size).to(device),
+        "mae_large": mae_vit_large_patch8_dec512d8b(img_size=img_size).to(device),
+        "mae_huge": mae_vit_huge_patch8_dec512d8b(img_size=img_size).to(device),
         "vit_base": (
-            vit_base_patch16(img_size=img_size)
+            vit_base_patch8(img_size=img_size)
             if num_classes is None
-            else vit_base_patch16(img_size=img_size, num_classes=num_classes).to(device)
+            else vit_base_patch8(img_size=img_size, num_classes=num_classes).to(device)
         ),
         "vit_large": (
-            vit_large_patch16(img_size=img_size)
+            vit_large_patch8(img_size=img_size)
             if num_classes is None
-            else vit_large_patch16(img_size=img_size, num_classes=num_classes).to(
-                device
-            )
+            else vit_large_patch8(img_size=img_size, num_classes=num_classes).to(device)
         ),
         "vit_huge": (
-            vit_huge_patch14(img_size=img_size)
+            vit_huge_patch8(img_size=img_size)
             if num_classes is None
-            else vit_huge_patch14(img_size=img_size, num_classes=num_classes).to(device)
+            else vit_huge_patch8(img_size=img_size, num_classes=num_classes).to(device)
         ),
     }
 

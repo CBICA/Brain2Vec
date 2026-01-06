@@ -251,7 +251,7 @@ class MaskedAutoencoderViT(nn.Module):
         return loss, pred, mask
 
 
-def mae_vit_base_patch16_dec512d8b(**kwargs: Any) -> nn.Module:
+def mae_vit_base_patch8_dec512d8b(**kwargs: Any) -> nn.Module:
     model = MaskedAutoencoderViT(
         patch_size=8,
         embed_dim=768,
@@ -267,7 +267,7 @@ def mae_vit_base_patch16_dec512d8b(**kwargs: Any) -> nn.Module:
     return model
 
 
-def mae_vit_large_patch16_dec512d8b(**kwargs: Any) -> nn.Module:
+def mae_vit_large_patch8_dec512d8b(**kwargs: Any) -> nn.Module:
     model = MaskedAutoencoderViT(
         patch_size=8,
         embed_dim=1056,
@@ -283,7 +283,7 @@ def mae_vit_large_patch16_dec512d8b(**kwargs: Any) -> nn.Module:
     return model
 
 
-def mae_vit_huge_patch14_dec512d8b(**kwargs: Any) -> nn.Module:
+def mae_vit_huge_patch8_dec512d8b(**kwargs: Any) -> nn.Module:
     model = MaskedAutoencoderViT(
         patch_size=8,
         embed_dim=1280,
