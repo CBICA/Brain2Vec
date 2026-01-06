@@ -346,7 +346,7 @@ def train(
         else:
             if test_stats["test_acc"] > best_res:
                 best_res = test_stats["test_acc"]
-                save_model(model, target_dir, model_name)
+                save_model(model_without_ddp, target_dir, model_name)
                 if verbose:
                     print(
                         f"[INFO] New best model saved at {target_dir} with test accuracy: {best_res:.4f}"
