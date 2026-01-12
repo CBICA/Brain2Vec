@@ -183,8 +183,8 @@ class MaskedAutoencoderViT(nn.Module):
         # 2) a subset of patches where ground_truth == 1
         ids_keep_list = []
         for i in range(N):
-            valid_ids = ids_shuffle[i, : num_valid[i]]
-            keep_valid = valid_ids[: len_keep_valid[i]]
+            valid_ids = ids_shuffle[i, : num_valid[i].item()]
+            keep_valid = valid_ids[: len_keep_valid[i].item()]
 
             keep_always = torch.where(ground_truth[i] == 0)[0]
             ids_keep = torch.cat([keep_valid, keep_always])
