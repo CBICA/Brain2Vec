@@ -240,7 +240,8 @@ class MaskedAutoencoderViT(nn.Module):
             x, mask, ids_restore = self.random_masking(x, mask_ratio)
         else:
             assert ground_truth is not None
-            ground_truth = self.patch_embed(ground_truth)
+            ground_truth = self.patchify(ground_truth)
+            ground_truth = (ground_truth.sum(dim=-1) > 0).float()
             x, mask, ids_restore = self.mask_specific(x, ground_truth, mask_ratio)
 
         cls_token = self.cls_token + self.pos_embed[:, :1, :]

@@ -14,8 +14,6 @@ def run_one_scan(scan: str, weights: str, ground_truth: Optional[str] = None) ->
     load_weights(model, weights, "cpu")
     model.eval()
 
-    mask = nib.load()
-
     niftii_img = nib.load(scan)
     img_header = niftii_img.header.copy()
     original_dims = img_header.get_data_shape()
@@ -26,8 +24,7 @@ def run_one_scan(scan: str, weights: str, ground_truth: Optional[str] = None) ->
     img_resized = resize(_img)
 
     if ground_truth is not None:
-        mask_img = nib.load(ground_truth)
-        mask_img = tio.ScalarImage(mask_img)
+        mask_img = tio.ScalarImage(ground_truth)
         mask_img = resize(mask_img)
         mask_img = normalize(mask_img)
         mask_img_tensor = mask_img.data.float()
@@ -43,7 +40,7 @@ def run_one_scan(scan: str, weights: str, ground_truth: Optional[str] = None) ->
         _, pred, mask = model(
             img_tensor.unsqueeze(0),
             masking_type="ground_truth",
-            ground_truth=mask_img,
+            ground_truth=mask_img.unsqueeze(0),
             mask_ratio=1.0,
         )
 
@@ -77,6 +74,7 @@ def run_one_scan(scan: str, weights: str, ground_truth: Optional[str] = None) ->
 
 if __name__ == "__main__":
     run_one_scan(
-        scan="../Datasets/BAScores/ISTAG_CN_All/istaging_2_new/CN_split/eval/3419196_2_0_T1_LPS_dlicv_aligned.nii.gz",
-        weights="weights/MAE_TEST.pth",
+        scan="/cbica/home/erusg/0_TEMP/tumor_sample_imgs/AATT_2012.06.20/AATT_2012.06.20_t1_LPS_rSRI_SSFinal.nii.gz",
+        ground_truth="/cbica/home/erusg/0_TEMP/tumor_sample_imgs/AATT_2012.06.20/AATT_2012.06.20_LPS_rSRI_segmdm.nii.gz",
+        weights="weights/NiChart_mae_vit_large_patch8_dec512d8b.pth",
     )
