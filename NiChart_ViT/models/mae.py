@@ -169,7 +169,7 @@ class MaskedAutoencoderViT(nn.Module):
         N, L, D = x.shape
         device = x.device
 
-        num_valid = ground_truth.sum(dim=1)
+        num_valid = ground_truth.sum(dim=1).long()
         len_keep_valid = (num_valid * (1 - mask_ratio)).long()
 
         noise = torch.rand(N, L, device=device)
