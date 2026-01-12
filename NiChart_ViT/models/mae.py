@@ -1,5 +1,5 @@
 from functools import partial
-from typing import Any, Tuple
+from typing import Any, Optional, Tuple
 
 import torch
 import torch.nn as nn
@@ -157,6 +157,55 @@ class MaskedAutoencoderViT(nn.Module):
 
         return imgs
 
+    def mask_specific(
+        self,
+        x: torch.Tensor,
+        ground_truth: torch.Tensor,
+        mask_ratio: float,
+    ) -> Any:
+        """
+        Mask patches only where ground_truth == 1
+        """
+        N, L, D = x.shape
+        device = x.device
+
+        num_valid = ground_truth.sum(dim=1)
+        len_keep_valid = (num_valid * (1 - mask_ratio)).long()
+
+        noise = torch.rand(N, L, device=device)
+        noise = noise.masked_fill(ground_truth == 0, float("inf"))
+
+        ids_shuffle = torch.argsort(noise, dim=1)
+        ids_restore = torch.argsort(ids_shuffle, dim=1)
+
+        # keep:
+        # 1) all patches where ground_truth == 0
+        # 2) a subset of patches where ground_truth == 1
+        ids_keep_list = []
+        for i in range(N):
+            valid_ids = ids_shuffle[i, : num_valid[i]]
+            keep_valid = valid_ids[: len_keep_valid[i]]
+
+            keep_always = torch.where(ground_truth[i] == 0)[0]
+            ids_keep = torch.cat([keep_valid, keep_always])
+            ids_keep_list.append(ids_keep)
+
+        ids_keep = torch.stack([ids[torch.argsort(ids)] for ids in ids_keep_list])
+
+        x_masked = torch.gather(
+            x,
+            dim=1,
+            index=ids_keep.unsqueeze(-1).repeat(1, 1, D),
+        )
+
+        mask = torch.ones([N, L], device=device)
+        for i in range(N):
+            mask[i, ids_keep[i]] = 0
+
+        mask = torch.gather(mask, dim=1, index=ids_restore)
+
+        return x_masked, mask, ids_restore
+
     def random_masking(self, x: torch.Tensor, mask_ratio: float) -> Any:
         N, L, D = x.shape
         len_keep = int(L * (1 - mask_ratio))
@@ -176,12 +225,22 @@ class MaskedAutoencoderViT(nn.Module):
 
         return x_masked, mask, ids_restore
 
-    def forward_encoder(self, x: torch.Tensor, mask_ratio: float) -> Any:
+    def forward_encoder(
+        self,
+        x: torch.Tensor,
+        masking_type: str = "random",
+        mask_ratio: float = 0.75,
+        ground_truth: Optional[torch.Tensor] = None,
+    ) -> Any:
         x = self.patch_embed(x)
 
         x = x + self.pos_embed[:, 1:, :]
 
-        x, mask, ids_restore = self.random_masking(x, mask_ratio)
+        if masking_type == "random":
+            x, mask, ids_restore = self.random_masking(x, mask_ratio)
+        else:
+            assert ground_truth is not None
+            x, mask, ids_restore = self.mask_specific(x, ground_truth, mask_ratio)
 
         cls_token = self.cls_token + self.pos_embed[:, :1, :]
         cls_tokens = cls_token.expand(x.shape[0], -1, -1)
@@ -242,9 +301,16 @@ class MaskedAutoencoderViT(nn.Module):
     def forward(
         self,
         x: torch.Tensor,
+        masking_type: str = "random",
+        ground_truth: Optional[torch.Tensor] = None,
         mask_ratio: float = 0.75,
     ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
-        latent, mask, ids_restore = self.forward_encoder(x, mask_ratio)
+        latent, mask, ids_restore = self.forward_encoder(
+            x,
+            masking_type=masking_type,
+            mask_ratio=mask_ratio,
+            ground_truth=ground_truth,
+        )
         pred = self.forward_decoder(latent, ids_restore)
         loss = self.forward_loss(x, pred, mask)
 

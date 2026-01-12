@@ -1,3 +1,5 @@
+from typing import Optional
+
 import nibabel as nib
 import torch
 import torchio as tio
@@ -7,10 +9,12 @@ from NiChart_ViT.models.mae import mae_vit_base_patch8_dec512d8b
 from NiChart_ViT.trainer.utils import load_weights
 
 
-def run_one_scan(scan: str, weights: str) -> None:
+def run_one_scan(scan: str, weights: str, ground_truth: Optional[str] = None) -> None:
     model = mae_vit_base_patch8_dec512d8b(img_size=128)
     load_weights(model, weights, "cpu")
     model.eval()
+
+    mask = nib.load()
 
     niftii_img = nib.load(scan)
     img_header = niftii_img.header.copy()
@@ -18,17 +22,30 @@ def run_one_scan(scan: str, weights: str) -> None:
 
     _img = tio.ScalarImage(scan)
     resize = tio.Resize((128, 128, 128))
+    normalize = tio.ZNormalization(masking_method=None)
     img_resized = resize(_img)
+
+    if ground_truth is not None:
+        mask_img = nib.load(ground_truth)
+        mask_img = tio.ScalarImage(mask_img)
+        mask_img = resize(mask_img)
+        mask_img = normalize(mask_img)
+        mask_img_tensor = mask_img.data.float()
+        mask_img = torch.where(mask_img_tensor > 0, 1.0, 0.0)
 
     original_mean = img_resized.data.float().mean()
     original_std = img_resized.data.float().std()
 
-    normalize = tio.ZNormalization(masking_method=None)
     img_normalized = normalize(img_resized)
     img_tensor = img_normalized.data.float()
 
     with torch.no_grad():
-        _, pred, mask = model(img_tensor.unsqueeze(0), mask_ratio=0.75)
+        _, pred, mask = model(
+            img_tensor.unsqueeze(0),
+            masking_type="ground_truth",
+            ground_truth=mask_img,
+            mask_ratio=1.0,
+        )
 
     y = model.unpatchify(pred)  # [1, 1, 128, 128, 128]
 
