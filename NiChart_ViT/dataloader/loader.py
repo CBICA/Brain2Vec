@@ -38,10 +38,12 @@ class NiftiLoader(Dataset):
 
         assert mode in ["train", "pretrain", "inference"]
         if label_dict is not None:
-            assert mode == "train", "Can't perform inference with a passed label dict."
+            assert (
+                mode != "pretrain"
+            ), "Can't perform inference with a passed label dict."
         else:
             assert (
-                mode != "train"
+                mode == "pretrain"
             ), "Can't perform training or evaluation without a label dict."
 
         self.in_dir = Path(in_dir)

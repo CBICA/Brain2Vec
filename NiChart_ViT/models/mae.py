@@ -209,6 +209,49 @@ class MaskedAutoencoderViT(nn.Module):
 
         return x_masked, mask, ids_restore
 
+    def block_masking(self, x: torch.Tensor, mask_ratio: float) -> Any:
+        N, L, D = x.shape
+        device = x.device
+
+        grid_size = round(L ** (1 / 3))
+        num_masked = int(L * mask_ratio)
+        block_size = round(num_masked ** (1 / 3))
+
+        block_size = min(block_size, grid_size)
+        max_start = grid_size - block_size
+
+        start_d = torch.randint(0, max_start + 1, (1,)).item()
+        start_h = torch.randint(0, max_start + 1, (1,)).item()
+        start_w = torch.randint(0, max_start + 1, (1,)).item()
+
+        mask_3d = torch.zeros(grid_size, grid_size, grid_size, device=device)
+        mask_3d[
+            start_d : start_d + block_size,
+            start_h : start_h + block_size,
+            start_w : start_w + block_size,
+        ] = 1
+
+        mask_flat = mask_3d.flatten()  # [L]
+
+        ids_keep = torch.where(mask_flat == 0)[0]
+        ids_mask = torch.where(mask_flat == 1)[0]
+
+        ids_shuffle = torch.cat([ids_keep, ids_mask])  # [L]
+
+        ids_restore = torch.argsort(ids_shuffle)
+
+        ids_shuffle = ids_shuffle.unsqueeze(0).expand(N, -1)
+        ids_restore = ids_restore.unsqueeze(0).expand(N, -1)
+        ids_keep = ids_keep.unsqueeze(0).expand(N, -1)
+
+        x_masked = torch.gather(
+            x, dim=1, index=ids_keep.unsqueeze(-1).expand(-1, -1, D)
+        )
+
+        mask = mask_flat.unsqueeze(0).expand(N, -1)
+
+        return x_masked, mask, ids_restore
+
     def random_masking(self, x: torch.Tensor, mask_ratio: float) -> Any:
         N, L, D = x.shape
         len_keep = int(L * (1 - mask_ratio))
@@ -241,11 +284,13 @@ class MaskedAutoencoderViT(nn.Module):
 
         if masking_type == "random":
             x, mask, ids_restore = self.random_masking(x, mask_ratio)
-        else:
+        elif masking_type == "ground_truth":
             assert ground_truth is not None
             ground_truth = self.patchify(ground_truth)
             ground_truth = (ground_truth.sum(dim=-1) > 0).float()
             x, mask, ids_restore = self.mask_specific(x, ground_truth, mask_ratio)
+        else:
+            x, mask, ids_restore = self.block_masking(x, mask_ratio)
 
         cls_token = self.cls_token + self.pos_embed[:, :1, :]
         cls_tokens = cls_token.expand(x.shape[0], -1, -1)

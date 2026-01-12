@@ -26,7 +26,7 @@ def run_one_scan(scan: str, weights: str, ground_truth: Optional[str] = None) ->
     if ground_truth is not None:
         mask_img = tio.ScalarImage(ground_truth)
         mask_img = resize(mask_img)
-        mask_img = normalize(mask_img)
+        # mask_img = normalize(mask_img)
         mask_img_tensor = mask_img.data.float()
         mask_img = torch.where(mask_img_tensor > 0, 1.0, 0.0)
 
@@ -39,9 +39,8 @@ def run_one_scan(scan: str, weights: str, ground_truth: Optional[str] = None) ->
     with torch.no_grad():
         _, pred, mask = model(
             img_tensor.unsqueeze(0),
-            masking_type="ground_truth",
-            ground_truth=mask_img.unsqueeze(0),
-            mask_ratio=1.0,
+            masking_type="block",
+            mask_ratio=0.4,
         )
 
     y = model.unpatchify(pred)  # [1, 1, 128, 128, 128]
@@ -49,8 +48,11 @@ def run_one_scan(scan: str, weights: str, ground_truth: Optional[str] = None) ->
     mask = mask.detach()
     mask = mask.unsqueeze(-1).repeat(1, 1, model.patch_embed.patch_size[0] ** 3)
     mask = model.unpatchify(mask)
+    mask = torch.einsum("ncdhw->ndhwc", mask).detach().cpu()
 
     x = img_tensor.unsqueeze(0)
+
+    im_masked = x * (1 - mask)
 
     im_paste = x * (1 - mask) + y * mask
 
@@ -66,15 +68,17 @@ def run_one_scan(scan: str, weights: str, ground_truth: Optional[str] = None) ->
     result = im_paste_upsampled.squeeze(0).squeeze(0)
     result = result.detach().cpu().numpy()
 
+    mask_to_img = nib.Nifti1Image(im_masked, niftii_img.affine, header=img_header)
     rec_to_img = nib.Nifti1Image(result, niftii_img.affine, header=img_header)
     nib.save(rec_to_img, "mae_test.nii.gz")
+    nib.save(mask_to_img, "mask.nii.gz")
 
     print("Saved reconstruction + visible!")
 
 
 if __name__ == "__main__":
     run_one_scan(
-        scan="/cbica/home/erusg/0_TEMP/tumor_sample_imgs/AATT_2012.06.20/AATT_2012.06.20_t1_LPS_rSRI_SSFinal.nii.gz",
-        ground_truth="/cbica/home/erusg/0_TEMP/tumor_sample_imgs/AATT_2012.06.20/AATT_2012.06.20_LPS_rSRI_segmdm.nii.gz",
-        weights="weights/NiChart_mae_vit_large_patch8_dec512d8b.pth",
+        scan="test_images/tumor/AATT_2012.06.20/AATT_2012.06.20_t1_LPS_rSRI_SSFinal.nii.gz",
+        ground_truth="test_images/tumor/AATT_2012.06.20/AATT_2012.06.20_LPS_rSRI_segmdm.nii.gz",
+        weights="",
     )
