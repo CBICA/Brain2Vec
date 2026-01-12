@@ -169,39 +169,42 @@ class MaskedAutoencoderViT(nn.Module):
         N, L, D = x.shape
         device = x.device
 
-        num_valid = ground_truth.sum(dim=1).long()
-        len_keep_valid = (num_valid * (1 - mask_ratio)).long()
+        ids_keep_list = []
+        ids_shuffle_list = []
+        len_keep_list = []
 
-        noise = torch.rand(N, L, device=device)
-        noise = noise.masked_fill(ground_truth == 0, float("inf"))
+        for i in range(N):
+            keep_always = torch.where(ground_truth[i] == 0)[0]
 
-        ids_shuffle = torch.argsort(noise, dim=1)
+            valid_indices = torch.where(ground_truth[i] == 1)[0]
+            num_valid = len(valid_indices)
+
+            len_keep_valid = int(num_valid * (1 - mask_ratio))
+
+            perm = torch.randperm(num_valid, device=device)
+            keep_valid = valid_indices[perm[:len_keep_valid]]
+            mask_valid = valid_indices[perm[len_keep_valid:]]
+
+            ids_keep = torch.cat([keep_always, keep_valid])
+            ids_keep = ids_keep[torch.argsort(ids_keep)]
+
+            ids_shuffle = torch.cat([ids_keep, mask_valid])
+
+            ids_keep_list.append(ids_keep)
+            ids_shuffle_list.append(ids_shuffle)
+            len_keep_list.append(len(ids_keep))
+
+            len_keep = len_keep_list[0]
+
+        ids_shuffle = torch.stack(ids_shuffle_list)
         ids_restore = torch.argsort(ids_shuffle, dim=1)
 
-        # keep:
-        # 1) all patches where ground_truth == 0
-        # 2) a subset of patches where ground_truth == 1
-        ids_keep_list = []
-        for i in range(N):
-            valid_ids = ids_shuffle[i, : num_valid[i].item()]
-            keep_valid = valid_ids[: len_keep_valid[i].item()]
+        ids_keep = ids_shuffle[:, :len_keep]
 
-            keep_always = torch.where(ground_truth[i] == 0)[0]
-            ids_keep = torch.cat([keep_valid, keep_always])
-            ids_keep_list.append(ids_keep)
-
-        ids_keep = torch.stack([ids[torch.argsort(ids)] for ids in ids_keep_list])
-
-        x_masked = torch.gather(
-            x,
-            dim=1,
-            index=ids_keep.unsqueeze(-1).repeat(1, 1, D),
-        )
+        x_masked = torch.gather(x, dim=1, index=ids_keep.unsqueeze(-1).repeat(1, 1, D))
 
         mask = torch.ones([N, L], device=device)
-        for i in range(N):
-            mask[i, ids_keep[i]] = 0
-
+        mask[:, :len_keep] = 0
         mask = torch.gather(mask, dim=1, index=ids_restore)
 
         return x_masked, mask, ids_restore
