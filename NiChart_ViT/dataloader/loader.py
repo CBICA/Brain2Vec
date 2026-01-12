@@ -164,7 +164,7 @@ def create_dataloaders(
 
     if os.path.isdir(test_dir):
         test_loader = NiftiLoader(
-            mode="inference",
+            mode="pretrain" if model == "mae" else "train",
             in_dir=test_dir,
             label_dict=None if model == "mae" else label_dict,
             data_augmentation=False,
