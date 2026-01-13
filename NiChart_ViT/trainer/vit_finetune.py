@@ -119,12 +119,15 @@ def train_step(
                 if mode == "binary"
                 else torch.argmax(y_pred, dim=1)
             )
-            acc.update(y_pred_classes, y)
-            auc.update(y_pred, y)
-            recall.update(y_pred_classes, y)
-            precision.update(y_pred_classes, y)
-            specificity.update(y_pred_classes, y)
-            f1_score.update(y_pred_classes, y)
+
+            y_hard = y.argmax(dim=1) if y.ndim > 1 and y.size(-1) > 1 else y
+
+            acc.update(y_pred_classes, y_hard)
+            auc.update(y_pred, y_hard)
+            recall.update(y_pred_classes, y_hard)
+            precision.update(y_pred_classes, y_hard)
+            specificity.update(y_pred_classes, y_hard)
+            f1_score.update(y_pred_classes, y_hard)
 
     if mode == "regression":
         stats["train_mae"] = stats["train_mae"] / float(len(dataloader))
@@ -225,13 +228,16 @@ def test_step(
                     if mode == "binary"
                     else torch.argmax(test_pred, dim=1)
                 )
-                acc.update(y_pred_classes, y)
-                auc.update(test_pred, y)
-                recall.update(y_pred_classes, y)
-                precision.update(y_pred_classes, y)
-                specificity.update(y_pred_classes, y)
-                f1_score.update(y_pred_classes, y)
-                confmat.update(y_pred_classes, y)
+
+                y_hard = y.argmax(dim=1) if y.ndim > 1 and y.size(-1) > 1 else y
+
+                acc.update(y_pred_classes, y_hard)
+                auc.update(test_pred, y_hard)
+                recall.update(y_pred_classes, y_hard)
+                precision.update(y_pred_classes, y_hard)
+                specificity.update(y_pred_classes, y_hard)
+                f1_score.update(y_pred_classes, y_hard)
+                confmat.update(y_pred_classes, y_hard)
 
     if mode == "regression":
         stats["test_mae"] = stats["test_mae"] / float(len(dataloader))
