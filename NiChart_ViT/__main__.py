@@ -2,7 +2,7 @@ import argparse
 from typing import Any, Optional
 
 import torch
-from timm.data import MixUp
+from timm.data import Mixup
 from timm.loss.cross_entropy import LabelSmoothingCrossEntropy, SoftTargetCrossEntropy
 from torch import nn
 from torch.distributed import destroy_process_group
@@ -203,7 +203,7 @@ def run_vit_finetune(args: Any) -> None:
     mixup_active = args.mixup > 0 or args.cutmix > 0.0 or args.cutmix_minmax is not None
     if mixup_active and args.mode != "regression":
         print("Mixup Activated!")
-        mixup_fn = MixUp(
+        mixup_fn = Mixup(
             mixup_alpha=args.mixup,
             cutmix_alpha=args.cutmix,
             cutmix_minmax=args.cutmix_minmax,

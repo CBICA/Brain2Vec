@@ -1,7 +1,7 @@
 from typing import Optional
 
 import torch
-from timm.data import MixUp
+from timm.data import Mixup
 from torch.utils.data import DataLoader
 from torchmetrics import (
     AUROC,
@@ -27,7 +27,7 @@ def train_step(
     dataloader: DataLoader,
     loss_fn: torch.nn.Module,
     optimizer: torch.optim.Optimizer,
-    mixup_fn: Optional[MixUp],
+    mixup_fn: Optional[Mixup],
     num_classes: Optional[int] = None,
     device: Literal["cuda", "mps", "cpu"] = "cuda",
     distributed: bool = False,
@@ -259,7 +259,7 @@ def train(
     train_dataloader: DataLoader,
     test_dataloader: DataLoader,
     optimizer: torch.optim.Optimizer,
-    mixup_fn: Optional[MixUp],
+    mixup_fn: Optional[Mixup],
     loss_fn: torch.nn.Module,
     epochs: int,
     patience: int,
