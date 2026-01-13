@@ -2,6 +2,8 @@ import argparse
 from typing import Any, Optional
 
 import torch
+from timm.data.mixup import MixUp
+from timm.loss.cross_entropy import LabelSmoothingCrossEntropy, SoftTargetCrossEntropy
 from torch import nn
 from torch.distributed import destroy_process_group
 
@@ -197,6 +199,21 @@ def run_vit_finetune(args: Any) -> None:
         )
         model_without_ddp = model.module
 
+    mixup_fn = None
+    mixup_active = args.mixup > 0 or args.cutmix > 0.0 or args.cutmix_minmax is not None
+    if mixup_active and args.mode != "regression":
+        print("Mixup Activated!")
+        mixup_fn = MixUp(
+            mixup_alpha=args.mixup,
+            cutmix_alpha=args.cutmix,
+            cutmix_minmax=args.cutmix_minmax,
+            prob=args.mixup_prob,
+            switch_prob=args.mixup_switch_prob,
+            mode=args.mixup_mode,
+            label_smoothing=args.smoothing,
+            num_classes=args.num_classes,
+        )
+
     optimizer = select_optimizer(
         model=model,
         optimizer=args.optimizer,
@@ -204,12 +221,21 @@ def run_vit_finetune(args: Any) -> None:
         weight_decay=args.weight_decay,
     )
 
-    if args.mode == "binary":
-        loss_fn = torch.nn.BCEWithLogitsLoss()
-    elif args.mode == "multiclass":
-        loss_fn = torch.nn.CrossEntropyLoss()
+    if mixup_fn is not None:
+        assert args.mode != "regression", "Can't add MixUp with regression labels"
+        loss_fn = SoftTargetCrossEntropy()
+    elif args.smoothing > 0.0:
+        assert (
+            args.mode != "regression"
+        ), "Can't perform label smoothing with regression labels"
+        loss_fn = LabelSmoothingCrossEntropy(smoothing=args.smoothing)
     else:
-        loss_fn = torch.nn.L1Loss(reduction="mean")
+        if args.mode == "binary":
+            loss_fn = torch.nn.BCEWithLogitsLoss()
+        elif args.mode == "multiclass":
+            loss_fn = torch.nn.CrossEntropyLoss()
+        else:
+            loss_fn = torch.nn.L1Loss(reduction="mean")
 
     _ = vit_finetune(
         model=model,
@@ -219,6 +245,7 @@ def run_vit_finetune(args: Any) -> None:
         train_dataloader=train_dataloader,
         test_dataloader=test_dataloader,
         optimizer=optimizer,
+        mixup_fn=mixup_fn,
         loss_fn=loss_fn,
         epochs=args.epochs,
         patience=args.patience,
@@ -465,6 +492,52 @@ def main() -> None:
         required=False,
     )
 
+    # augmentation specifics
+    vit_finetune.add_argument(
+        "--smoothing",
+        type=float,
+        default=0.1,
+    )
+
+    # mixup specifics
+    vit_finetune.add_argument(
+        "--mixup",
+        type=float,
+        default=0,
+    )
+
+    vit_finetune.add_argument(
+        "--cutmix",
+        type=float,
+        default=0,
+    )
+
+    vit_finetune.add_argument(
+        "--cutmix_minmax",
+        type=float,
+        nargs="+",
+        default=None,
+    )
+
+    vit_finetune.add_argument(
+        "--mixup_prob",
+        type=float,
+        default=1.0,
+    )
+
+    vit_finetune.add_argument(
+        "--mixup_switch_prob",
+        type=float,
+        default=0.5,
+    )
+
+    vit_finetune.add_argument(
+        "--mixup_mode",
+        type=str,
+        default="batch",
+    )
+
+    # misc
     vit_finetune.add_argument(
         "--verbose",
         action="store_true",
