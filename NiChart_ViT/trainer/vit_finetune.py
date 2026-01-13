@@ -3,8 +3,7 @@ from typing import Optional
 import torch
 from timm.data import Mixup
 from torch.utils.data import DataLoader
-from torchmetrics import (
-    AUROC,
+from torchmetrics import (  # AUROC,
     Accuracy,
     ConfusionMatrix,
     F1Score,
@@ -61,7 +60,7 @@ def train_step(
             acc = Accuracy(task=mode, average="macro", num_classes=num_classes).to(
                 device
             )
-            auc = AUROC(task=mode, average="macro", num_classes=num_classes).to(device)
+            # auc = AUROC(task=mode, average="macro", num_classes=num_classes).to(device)
             recall = Recall(task=mode, average="macro", num_classes=num_classes).to(
                 device
             )
@@ -76,7 +75,7 @@ def train_step(
             )
         else:
             acc = Accuracy(task=mode).to(device)
-            auc = AUROC(task=mode).to(device)
+            # auc = AUROC(task=mode).to(device)
             recall = Recall(task=mode).to(device)
             precision = Precision(task=mode).to(device)
             specificity = Specificity(task=mode).to(device)
@@ -182,7 +181,7 @@ def test_step(
             acc = Accuracy(task=mode, average="macro", num_classes=num_classes).to(
                 device
             )
-            auc = AUROC(task=mode, average="macro", num_classes=num_classes).to(device)
+            # auc = AUROC(task=mode, average="macro", num_classes=num_classes).to(device)
             recall = Recall(task=mode, average="macro", num_classes=num_classes).to(
                 device
             )
@@ -198,7 +197,7 @@ def test_step(
             confmat = ConfusionMatrix(task=mode, num_classes=num_classes).to(device)
         else:
             acc = Accuracy(task=mode).to(device)
-            auc = AUROC(task=mode).to(device)
+            # auc = AUROC(task=mode).to(device)
             recall = Recall(task=mode).to(device)
             precision = Precision(task=mode).to(device)
             specificity = Specificity(task=mode).to(device)
@@ -218,8 +217,8 @@ def test_step(
                 test_pred = model(X)
                 if mode != "multiclass":
                     test_pred = test_pred.squeeze()
-
-                # loss = loss_fn(test_pred, y)
+                if mode == "regression":
+                    loss = loss_fn(test_pred, y)
 
             if mode == "regression":
                 stats["test_mae"] += loss.item()
