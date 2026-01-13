@@ -2,7 +2,7 @@ import argparse
 from typing import Any, Optional
 
 import torch
-from timm.data.mixup import MixUp
+from timm.data import MixUp
 from timm.loss.cross_entropy import LabelSmoothingCrossEntropy, SoftTargetCrossEntropy
 from torch import nn
 from torch.distributed import destroy_process_group
