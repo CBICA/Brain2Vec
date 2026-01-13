@@ -114,14 +114,15 @@ def train_step(
             nrmse.update(y_pred, y)
             r2_score.update(y_pred, y)
         else:
-            y_pred_classes = (
-                (torch.sigmoid(y_pred) > 0.5).float()
-                if mode == "binary"
-                else torch.argmax(y_pred, dim=1)
-            )
+            if mode == "binary":
+                y_pred_classes = torch.sigmoid(y_pred > 0.5).float()
+            else:
+                _, y_pred_classes = y_pred.topk(1)
+                y_pred_classes = y_pred_classes.squeeze(dim=-1)
 
+            print(y_pred_classes.shape, y.shape, y_pred.shape)
             acc.update(y_pred_classes, y)
-            auc.update(y_pred, y)
+            # auc.update(y_pred, y)
             recall.update(y_pred_classes, y)
             precision.update(y_pred_classes, y)
             specificity.update(y_pred_classes, y)
@@ -221,14 +222,14 @@ def test_step(
                 nrmse.update(test_pred, y)
                 r2_score.update(test_pred, y)
             else:
-                y_pred_classes = (
-                    (torch.sigmoid(test_pred) > 0.5).float()
-                    if mode == "binary"
-                    else torch.argmax(test_pred, dim=1)
-                )
+                if mode == "binary":
+                    y_pred_classes = (torch.sigmoid(test_pred) > 0.5).float()
+                else:
+                    _, y_pred_classes = test_pred.topk(1)
+                    y_pred_classes = y_pred_classes.squeeze()
 
                 acc.update(y_pred_classes, y)
-                auc.update(test_pred, y)
+                # auc.update(test_pred, y)
                 recall.update(y_pred_classes, y)
                 precision.update(y_pred_classes, y)
                 specificity.update(y_pred_classes, y)
