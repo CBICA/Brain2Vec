@@ -84,6 +84,7 @@ def train_step(
 
     for X, y in dataloader:
         X, y = X.to(device), y.to(device)
+        y_original = y.clone()
 
         if mode != "multiclass":
             X, y = X.float(), y.float()
@@ -97,7 +98,9 @@ def train_step(
 
         # make prediction
         with torch.autocast(device_type="cuda", dtype=torch.bfloat16):
-            y_pred = model(X).squeeze()
+            y_pred = model(X)
+            if mode != "multiclass":
+                y_pred = y_pred.squeeze()
 
             # loss computation
             loss = loss_fn(y_pred, y)
@@ -120,13 +123,12 @@ def train_step(
                 _, y_pred_classes = y_pred.topk(1)
                 y_pred_classes = y_pred_classes.squeeze(dim=-1)
 
-            print(y_pred_classes.shape, y.shape, y_pred.shape)
-            acc.update(y_pred_classes, y)
+            acc.update(y_pred_classes, y_original)
             # auc.update(y_pred, y)
-            recall.update(y_pred_classes, y)
-            precision.update(y_pred_classes, y)
-            specificity.update(y_pred_classes, y)
-            f1_score.update(y_pred_classes, y)
+            recall.update(y_pred_classes, y_original)
+            precision.update(y_pred_classes, y_original)
+            specificity.update(y_pred_classes, y_original)
+            f1_score.update(y_pred_classes, y_original)
 
     if mode == "regression":
         stats["train_mae"] = stats["train_mae"] / float(len(dataloader))
@@ -137,7 +139,7 @@ def train_step(
             stats["train_mae"] = all_reduce_mean(stats["train_mae"])
     else:
         stats["train_acc"] = acc.compute().item()
-        stats["train_auc"] = auc.compute().item()
+        # stats["train_auc"] = auc.compute().item()
         stats["train_recall"] = recall.compute().item()
         stats["train_precision"] = precision.compute().item()
         stats["train_specificity"] = specificity.compute().item()
@@ -213,8 +215,11 @@ def test_step(
                 X, y = X.float(), y.long()
 
             with torch.autocast(device_type="cuda", dtype=torch.bfloat16):
-                test_pred = model(X).squeeze()
-                loss = loss_fn(test_pred, y)
+                test_pred = model(X)
+                if mode != "multiclass":
+                    test_pred = test_pred.squeeze()
+
+                # loss = loss_fn(test_pred, y)
 
             if mode == "regression":
                 stats["test_mae"] += loss.item()
@@ -226,7 +231,7 @@ def test_step(
                     y_pred_classes = (torch.sigmoid(test_pred) > 0.5).float()
                 else:
                     _, y_pred_classes = test_pred.topk(1)
-                    y_pred_classes = y_pred_classes.squeeze()
+                    y_pred_classes = y_pred_classes.squeeze(dim=-1)
 
                 acc.update(y_pred_classes, y)
                 # auc.update(test_pred, y)
@@ -245,7 +250,7 @@ def test_step(
             stats["test_mae"] = all_reduce_mean(stats["test_mae"])
     else:
         stats["test_acc"] = acc.compute().item()
-        stats["test_auc"] = auc.compute().item()
+        # stats["test_auc"] = auc.compute().item()
         stats["test_recall"] = recall.compute().item()
         stats["test_precision"] = precision.compute().item()
         stats["test_specificity"] = specificity.compute().item()
