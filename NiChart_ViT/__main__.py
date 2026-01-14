@@ -164,7 +164,10 @@ def run_vit_finetune(args: Any) -> None:
     init_distributed_mode(args)
 
     model = avail_models[args.model]
-    load_weights(model=model, model_weights=args.pretrain, device=args.device)
+    if len(args.pretrain) > 0:
+        load_weights(model=model, model_weights=args.pretrain, device=args.device)
+    # otherwise just train from scratch
+
     if args.distributed:
         torch.cuda.set_device(args.gpu)
         model = model.cuda(args.gpu)
@@ -413,6 +416,7 @@ def main() -> None:
     vit_finetune.add_argument(
         "--pretrain",
         type=str,
+        default="",
         required=False,
     )
 

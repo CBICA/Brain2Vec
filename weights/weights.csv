@@ -1,0 +1,2 @@
+model,task,mae,mse,nrmse,r2
+NiChart_vit_base_patch8_dec512d8b_ba.pth,BA,3.63,22.4991,0.0731,0.7816
