@@ -9,6 +9,8 @@ def train_step(
     model: torch.nn.Module,
     dataloader: DataLoader,
     optimizer: torch.optim.Optimizer,
+    masking_type: str,
+    mask_ratio: float,
     device: str,
     distributed: bool = False,
 ) -> float:
@@ -23,7 +25,11 @@ def train_step(
         optimizer.zero_grad()
 
         with torch.autocast(device_type="cuda", dtype=torch.bfloat16):
-            loss, _, _ = model(X)
+            loss, _, _ = model(
+                X,
+                masking_type=masking_type,
+                mask_ratio=mask_ratio,
+            )
 
         loss.backward()
 
@@ -43,6 +49,8 @@ def train_step(
 def test_step(
     model: torch.nn.Module,
     dataloader: DataLoader,
+    masking_type: str,
+    mask_ratio: float,
     device: str,
     distributed: bool = False,
 ) -> float:
@@ -56,7 +64,11 @@ def test_step(
             X = X.float()
 
             with torch.autocast(device_type="cuda", dtype=torch.bfloat16):
-                loss, _, _ = model(X)
+                loss, _, _ = model(
+                    X,
+                    masking_type=masking_type,
+                    mask_ratio=mask_ratio,
+                )
 
             mse += loss.item()
 
@@ -74,6 +86,8 @@ def train(
     train_dataloader: DataLoader,
     test_dataloader: DataLoader,
     optimizer: torch.optim.Optimizer,
+    masking_type: str,
+    mask_ratio: float,
     epochs: int,
     patience: int,
     device: str,
@@ -103,6 +117,8 @@ def train(
             model=model,
             dataloader=train_dataloader,
             optimizer=optimizer,
+            masking_type=masking_type,
+            mask_ratio=mask_ratio,
             device=device,
             distributed=distributed,
         )
@@ -110,6 +126,8 @@ def train(
         test_mse = test_step(
             model=model,
             dataloader=test_dataloader,
+            masking_type=masking_type,
+            mask_ratio=mask_ratio,
             device=device,
             distributed=distributed,
         )

@@ -168,6 +168,8 @@ def run_mae_pretrain(args: Any) -> None:
         distributed=args.distributed,
         train_dataloader=train_dataloader,
         test_dataloader=test_dataloader,
+        masking_type=args.masking_type,
+        mask_ratio=args.mask_ratio,
         optimizer=optimizer,
         epochs=args.epochs,
         patience=args.patience,
@@ -299,6 +301,20 @@ def main() -> None:
         "--img_size",
         type=int,
         default=128,
+        required=False,
+    )
+
+    mae_train.add_argument(
+        "--masking_type",
+        type=str,
+        default="random",
+        required=False,
+    )
+
+    mae_train.add_argument(
+        "--mask_ratio",
+        type=float,
+        default=0.75,
         required=False,
     )
 
