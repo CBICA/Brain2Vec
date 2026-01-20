@@ -213,42 +213,44 @@ class MaskedAutoencoderViT(nn.Module):
         N, L, D = x.shape
         device = x.device
 
-        grid_size = round(L ** (1 / 3))
+        grid_size = int(round(L ** (1 / 3)))
         num_masked = int(L * mask_ratio)
-        block_size = round(num_masked ** (1 / 3))
+        block_size = int(round(num_masked ** (1 / 3)))
 
         block_size = min(block_size, grid_size)
         max_start = grid_size - block_size
 
-        start_d = torch.randint(0, max_start + 1, (1,)).item()
-        start_h = torch.randint(0, max_start + 1, (1,)).item()
-        start_w = torch.randint(0, max_start + 1, (1,)).item()
+        x_masked_list = []
+        mask_list = []
+        ids_restore_list = []
 
-        mask_3d = torch.zeros(grid_size, grid_size, grid_size, device=device)
-        mask_3d[
-            start_d : start_d + block_size,
-            start_h : start_h + block_size,
-            start_w : start_w + block_size,
-        ] = 1
+        for n in range(N):
+            start_d = torch.randint(0, max_start + 1, (1,), device=device).item()
+            start_h = torch.randint(0, max_start + 1, (1,), device=device).item()
+            start_w = torch.randint(0, max_start + 1, (1,), device=device).item()
 
-        mask_flat = mask_3d.flatten()  # [L]
+            mask_3d = torch.zeros(grid_size, grid_size, grid_size, device=device)
+            mask_3d[
+                start_d : start_d + block_size,
+                start_h : start_h + block_size,
+                start_w : start_w + block_size,
+            ] = 1
 
-        ids_keep = torch.where(mask_flat == 0)[0]
-        ids_mask = torch.where(mask_flat == 1)[0]
+            mask_flat = mask_3d.flatten()
 
-        ids_shuffle = torch.cat([ids_keep, ids_mask])  # [L]
+            ids_keep = torch.where(mask_flat == 0)[0]
+            ids_mask = torch.where(mask_flat == 1)[0]
 
-        ids_restore = torch.argsort(ids_shuffle)
+            ids_shuffle = torch.cat([ids_keep, ids_mask])
+            ids_restore = torch.argsort(ids_shuffle)
 
-        ids_shuffle = ids_shuffle.unsqueeze(0).expand(N, -1)
-        ids_restore = ids_restore.unsqueeze(0).expand(N, -1)
-        ids_keep = ids_keep.unsqueeze(0).expand(N, -1)
+            x_masked_list.append(x[n : n + 1, ids_keep, :])
+            mask_list.append(mask_flat.unsqueeze(0))
+            ids_restore_list.append(ids_restore.unsqueeze(0))
 
-        x_masked = torch.gather(
-            x, dim=1, index=ids_keep.unsqueeze(-1).expand(-1, -1, D)
-        )
-
-        mask = mask_flat.unsqueeze(0).expand(N, -1)
+        x_masked = torch.cat(x_masked_list, dim=0)
+        mask = torch.cat(mask_list, dim=0)
+        ids_restore = torch.cat(ids_restore_list, dim=0)
 
         return x_masked, mask, ids_restore
 

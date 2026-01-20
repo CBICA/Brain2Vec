@@ -40,7 +40,7 @@ def run_one_scan(scan: str, weights: str, ground_truth: Optional[str] = None) ->
         _, pred, mask = model(
             img_tensor.unsqueeze(0),
             masking_type="block",
-            mask_ratio=0.4,
+            mask_ratio=0.05,
         )
 
     y = model.unpatchify(pred)  # [1, 1, 128, 128, 128]
@@ -48,7 +48,7 @@ def run_one_scan(scan: str, weights: str, ground_truth: Optional[str] = None) ->
     mask = mask.detach()
     mask = mask.unsqueeze(-1).repeat(1, 1, model.patch_embed.patch_size[0] ** 3)
     mask = model.unpatchify(mask)
-    mask = torch.einsum("ncdhw->ndhwc", mask).detach().cpu()
+    mask = mask.detach().cpu()
 
     x = img_tensor.unsqueeze(0)
 
@@ -67,6 +67,7 @@ def run_one_scan(scan: str, weights: str, ground_truth: Optional[str] = None) ->
 
     result = im_paste_upsampled.squeeze(0).squeeze(0)
     result = result.detach().cpu().numpy()
+    im_masked = im_masked.squeeze(0).squeeze(0).detach().cpu().numpy()
 
     mask_to_img = nib.Nifti1Image(im_masked, niftii_img.affine, header=img_header)
     rec_to_img = nib.Nifti1Image(result, niftii_img.affine, header=img_header)
