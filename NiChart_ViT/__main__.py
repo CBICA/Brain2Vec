@@ -2,10 +2,10 @@ import argparse
 from typing import Any, Optional
 
 import torch
-from timm.data import Mixup
 from timm.loss.cross_entropy import LabelSmoothingCrossEntropy, SoftTargetCrossEntropy
 from torch import nn
 from torch.distributed import destroy_process_group
+from torchvision.transforms import v2
 
 from NiChart_ViT.dataloader.loader import create_dataloaders
 from NiChart_ViT.models.mae import (
@@ -203,19 +203,21 @@ def run_vit_finetune(args: Any) -> None:
         model_without_ddp = model.module
 
     mixup_fn = None
-    mixup_active = args.mixup > 0 or args.cutmix > 0.0 or args.cutmix_minmax is not None
-    if mixup_active and args.mode != "regression":
+    cutmix_fn = None
+    mixup = None
+    if args.mixup > 0.0 and args.mode != "regression":
         print("Mixup Activated!")
-        mixup_fn = Mixup(
-            mixup_alpha=args.mixup,
-            cutmix_alpha=args.cutmix,
-            cutmix_minmax=args.cutmix_minmax,
-            prob=args.mixup_prob,
-            switch_prob=args.mixup_switch_prob,
-            mode=args.mixup_mode,
-            label_smoothing=args.smoothing,
-            num_classes=args.num_classes,
-        )
+        mixup_fn = v2.MixUp(alpha=args.mixup, num_classes=args.num_classes)
+    if args.cutmix > 0.0 and args.mode != "regression":
+        print("CutMix Activated!")
+        cutmix_fn = v2.CutMix(alpha=args.cutmix, num_classes=args.num_classes)
+
+    if mixup_fn is not None and cutmix_fn is not None:
+        mixup = v2.RandomChoice([mixup_fn, cutmix_fn])
+    elif mixup_fn is not None:
+        mixup = mixup_fn
+    else:
+        mixup = cutmix_fn
 
     optimizer = select_optimizer(
         model=model,
@@ -224,7 +226,7 @@ def run_vit_finetune(args: Any) -> None:
         weight_decay=args.weight_decay,
     )
 
-    if mixup_fn is not None:
+    if mixup is not None:
         assert args.mode != "regression", "Can't add MixUp with regression labels"
         loss_fn = SoftTargetCrossEntropy()
     elif args.smoothing > 0.0:
@@ -248,7 +250,7 @@ def run_vit_finetune(args: Any) -> None:
         train_dataloader=train_dataloader,
         test_dataloader=test_dataloader,
         optimizer=optimizer,
-        mixup_fn=mixup_fn,
+        mixup_fn=mixup,
         loss_fn=loss_fn,
         epochs=args.epochs,
         patience=args.patience,
@@ -514,31 +516,6 @@ def main() -> None:
         "--cutmix",
         type=float,
         default=0,
-    )
-
-    vit_finetune.add_argument(
-        "--cutmix_minmax",
-        type=float,
-        nargs="+",
-        default=None,
-    )
-
-    vit_finetune.add_argument(
-        "--mixup_prob",
-        type=float,
-        default=1.0,
-    )
-
-    vit_finetune.add_argument(
-        "--mixup_switch_prob",
-        type=float,
-        default=0.5,
-    )
-
-    vit_finetune.add_argument(
-        "--mixup_mode",
-        type=str,
-        default="batch",
     )
 
     # misc
