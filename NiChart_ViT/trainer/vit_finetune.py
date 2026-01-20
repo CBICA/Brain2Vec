@@ -23,9 +23,9 @@ def train_step(
     model: torch.nn.Module,
     mode: str,
     dataloader: DataLoader,
-    loss_fn: torch.nn.Module,
+    loss_fn: Callable,
     optimizer: torch.optim.Optimizer,
-    mixup_fn: Callable,
+    mixup_fn: Optional[Callable],
     num_classes: Optional[int] = None,
     device: Literal["cuda", "mps", "cpu"] = "cuda",
     distributed: bool = False,
@@ -90,7 +90,7 @@ def train_step(
             X, y = X.float(), y.long()
 
         if mixup_fn is not None:
-            X, y = mixup_fn(X, y)
+            X, y_a, y_b, lam = mixup_fn(X, y)
 
         optimizer.zero_grad()
 
@@ -101,7 +101,10 @@ def train_step(
                 y_pred = y_pred.squeeze()
 
             # loss computation
-            loss = loss_fn(y_pred, y)
+            if mixup_fn is not None:
+                loss = loss_fn(y_pred, y_a, y_b, lam)
+            else:
+                loss = loss_fn(y_pred, y)
 
         loss.backward()
 
@@ -265,8 +268,8 @@ def train(
     train_dataloader: DataLoader,
     test_dataloader: DataLoader,
     optimizer: torch.optim.Optimizer,
-    mixup_fn: Callable,
-    loss_fn: torch.nn.Module,
+    mixup_fn: Optional[Callable],
+    loss_fn: Callable,
     epochs: int,
     patience: int,
     num_classes: Optional[int] = None,

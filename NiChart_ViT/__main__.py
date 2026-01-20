@@ -1,11 +1,11 @@
 import argparse
-from typing import Any, Optional
+from typing import Any, Optional, Tuple
 
+import numpy as np
 import torch
-from timm.loss.cross_entropy import LabelSmoothingCrossEntropy, SoftTargetCrossEntropy
+from timm.loss.cross_entropy import LabelSmoothingCrossEntropy
 from torch import nn
 from torch.distributed import destroy_process_group
-from torchvision.transforms import v2
 
 from NiChart_ViT.dataloader.loader import create_dataloaders
 from NiChart_ViT.models.mae import (
@@ -17,6 +17,37 @@ from NiChart_ViT.models.vit import vit_base_patch8, vit_huge_patch8, vit_large_p
 from NiChart_ViT.trainer.mae_pretrain import train as mae_pretrain
 from NiChart_ViT.trainer.utils import init_distributed_mode, load_weights
 from NiChart_ViT.trainer.vit_finetune import train as vit_finetune
+
+
+class MixUp:
+    def __init__(self, alpha: float) -> None:
+        self.alpha = alpha
+
+    def __call__(
+        self, x: torch.Tensor, y: torch.Tensor
+    ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, float]:
+        if self.alpha > 0.0:
+            lam = np.random.beta(self.alpha, self.alpha)
+        else:
+            lam = 1
+
+        batch_size = x.size()[0]
+        index = torch.randperm(batch_size).cuda()
+
+        mixed_x = lam * x + (1 - lam) * x[index, :]
+        y_a, y_b = y, y[index]
+
+        return mixed_x, y_a, y_b, lam
+
+
+class mixup_criterion:
+    def __init__(self, criterion: nn.Module) -> None:
+        self.criterion = criterion
+
+    def __call__(
+        self, pred: torch.Tensor, y_a: torch.Tensor, y_b: torch.Tensor, lam: float
+    ) -> torch.Tensor:
+        return lam * self.criterion(pred, y_a) + (1 - lam) * self.criterion(pred, y_b)
 
 
 def available_models(
@@ -202,22 +233,10 @@ def run_vit_finetune(args: Any) -> None:
         )
         model_without_ddp = model.module
 
-    mixup_fn = None
-    cutmix_fn = None
     mixup = None
     if args.mixup > 0.0 and args.mode != "regression":
         print("Mixup Activated!")
-        mixup_fn = v2.MixUp(alpha=args.mixup, num_classes=args.num_classes)
-    if args.cutmix > 0.0 and args.mode != "regression":
-        print("CutMix Activated!")
-        cutmix_fn = v2.CutMix(alpha=args.cutmix, num_classes=args.num_classes)
-
-    if mixup_fn is not None and cutmix_fn is not None:
-        mixup = v2.RandomChoice([mixup_fn, cutmix_fn])
-    elif mixup_fn is not None:
-        mixup = mixup_fn
-    else:
-        mixup = cutmix_fn
+        mixup = MixUp(alpha=args.mixup)
 
     optimizer = select_optimizer(
         model=model,
@@ -228,7 +247,10 @@ def run_vit_finetune(args: Any) -> None:
 
     if mixup is not None:
         assert args.mode != "regression", "Can't add MixUp with regression labels"
-        loss_fn = SoftTargetCrossEntropy()
+        if args.mode == "binary":
+            loss_fn = mixup_criterion(criterion=torch.nn.BCEWithLogitsLoss())
+        else:
+            loss_fn = mixup_criterion(criterion=torch.nn.CrossEntropyLoss())
     elif args.smoothing > 0.0:
         assert (
             args.mode != "regression"
@@ -508,12 +530,6 @@ def main() -> None:
     # mixup specifics
     vit_finetune.add_argument(
         "--mixup",
-        type=float,
-        default=0,
-    )
-
-    vit_finetune.add_argument(
-        "--cutmix",
         type=float,
         default=0,
     )
