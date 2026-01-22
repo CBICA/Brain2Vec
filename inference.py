@@ -53,8 +53,9 @@ def mae_inference(
 
         with torch.autocast(device_type=device, dtype=torch.bfloat16):
             features, _, _ = model.forward_encoder(imgs)
-            for i in range(len(features)):
-                out_features[mrids[i]] = features[i]
+            features = features[:, 0, :]
+            for i in range(len(mrids)):
+                out_features[mrids[i]] = features[i].cpu().tolist()
 
     with open(out_json, "w") as f:
         json.dump(out_features, f)
@@ -88,7 +89,10 @@ def vit_inference(
 
         with torch.autocast(device_type=device, dtype=torch.bfloat16):
             if return_features:
-                out_features.extend(model.forward_features(imgs).cpu().tolist())
+                _features = model.forward_features(imgs)
+                _features = _features[:, 0, :]
+                _features = _features.cpu().tolist()
+                out_features.extend(_features)
             y_pred = model(imgs)
 
         if mode == "binary":
