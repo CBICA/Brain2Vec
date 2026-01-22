@@ -1,3 +1,4 @@
+import json
 import os
 from typing import Optional
 
@@ -14,16 +15,7 @@ from NiChart_ViT.models.vit import vit_base_patch8
 from NiChart_ViT.trainer.utils import load_weights
 
 
-def vit_inference(
-    model: torch.nn.Module,
-    mode: str,
-    model_weights: str,
-    in_dir: str,
-    out_csv: str,
-    device: str = "cuda",
-) -> None:
-    load_weights(model, model_weights, device)
-
+def test_dataloader(in_dir: str) -> DataLoader:
     single_loader = NiftiLoader(
         mode="inference",
         in_dir=in_dir,
@@ -35,9 +27,26 @@ def vit_inference(
         num_workers=os.cpu_count() // 2,  # type: ignore
     )
 
+    return dataloader
+
+
+def vit_inference(
+    model: torch.nn.Module,
+    mode: str,
+    model_weights: str,
+    in_dir: str,
+    out_csv: str,
+    return_features: bool = False,
+    device: str = "cuda",
+) -> None:
+    load_weights(model, model_weights, device)
+
+    dataloader = test_dataloader(in_dir)
+
     model.to(device)
     model.eval()
     y_preds = []
+    out_features = []
 
     for _, (imgs, mrids) in enumerate(dataloader):
         imgs = imgs.to(device)
@@ -45,6 +54,8 @@ def vit_inference(
         imgs.requires_grad_()
 
         with torch.autocast(device_type=device, dtype=torch.bfloat16):
+            if return_features:
+                out_features.extend(model.forward_features(imgs).cpu().tolist())
             y_pred = model(imgs)
 
         if mode == "binary":
@@ -66,6 +77,11 @@ def vit_inference(
             "Prediction": [y_pred[1] for y_pred in y_preds],
         }
     )
+
+    if return_features:
+        assert len(out_features) != 0
+        with open("embeddings.json", "w") as f:
+            json.dump(out_features, f)
 
     output_dir = os.path.dirname(out_csv)
     if output_dir and not os.path.exists(output_dir):
@@ -146,8 +162,8 @@ if __name__ == "__main__":
     vit_inference(
         model=vit_base_patch8(img_size=128, num_classes=1),
         mode="regression",
-        model_weights="weights/NiChart_vit_base_patch8_dec512d8b_ba_nofinetune.pth",
-        in_dir="/cbica/home/maggiors/Datasets/BAScores/ISTAG_CN_All/istaging_2_new/diabetes/diabetes_PURE",
-        out_csv="ba_diabetes_nichart_vit_base_patch8_dec512d.csv",
+        model_weights="weights/NiChart_vit_base_patch8_dec512d8b_ba.pth",
+        in_dir="/cbica/home/maggiors/Datasets/BAScores/ISTAG_CN_All/istaging_2_new/AD/AD_PURE",
+        out_csv="ba_ad_nichart_vit_base_patch8_dec512d.csv",
         device="cuda",
     )
