@@ -30,6 +30,39 @@ def test_dataloader(in_dir: str) -> DataLoader:
     return dataloader
 
 
+@torch.no_grad()  # type: ignore
+def mae_inference(
+    model: torch.nn.Module,
+    model_weights: str,
+    in_dir: str,
+    out_json: str,
+    device: str = "cuda",
+) -> None:
+    load_weights(model, model_weights, device)
+
+    dataloader = test_dataloader(in_dir)
+
+    model.to(device)
+    model.eval()
+    out_features = {}
+
+    for _, (imgs, mrids) in enumerate(dataloader):
+        imgs = imgs.to(device)
+        imgs = imgs.float()
+        imgs.requires_grad_()
+
+        with torch.autocast(device_type=device, dtype=torch.bfloat16):
+            features, _, _ = model.forward_encoder(imgs)
+            for i in range(features):
+                out_features[mrids[i]] = features[i]
+
+    with open(out_json, "w") as f:
+        json.dump(out_features, f)
+
+    print(f"Inference results saved to {out_json} successfully!")
+
+
+@torch.no_grad()  # type: ignore
 def vit_inference(
     model: torch.nn.Module,
     mode: str,
@@ -88,6 +121,7 @@ def vit_inference(
         os.makedirs(output_dir, exist_ok=True)
 
     inference_res.to_csv(out_csv, index=False)
+    print(f"Inference results saved to {out_csv} successfully")
 
 
 def run_one_scan(scan: str, weights: str, ground_truth: Optional[str] = None) -> None:
