@@ -10,6 +10,7 @@ from torch.utils.data import DataLoader
 
 from NiChart_ViT.dataloader.loader import NiftiLoader
 from NiChart_ViT.models.mae import mae_vit_base_patch8_dec512d8b
+from NiChart_ViT.models.vit import vit_base_patch8
 from NiChart_ViT.trainer.utils import load_weights
 
 
@@ -47,10 +48,10 @@ def vit_inference(
             y_pred = model(imgs)
 
         if mode == "binary":
-            y_pred_classes = (torch.sigmoid(y_pred) > 0.5).float()
-        else:
-            _, y_pred_classes = y_pred.topk(1)
-            y_pred_classes = y_pred_classes.squeeze(dim=-1)
+            y_pred = (torch.sigmoid(y_pred) > 0.5).float()
+        if mode == "multiclass":
+            _, y_pred = y_pred.topk(1)
+            y_pred = y_pred.squeeze(dim=-1)
 
         y_pred = y_pred.cpu().tolist()
         if isinstance(mrids, (list, tuple)):
@@ -142,4 +143,11 @@ def run_one_scan(scan: str, weights: str, ground_truth: Optional[str] = None) ->
 
 
 if __name__ == "__main__":
-    pass
+    vit_inference(
+        model=vit_base_patch8(img_size=128, num_classes=1),
+        mode="regression",
+        model_weights="weights/NiChart_vit_base_patch8_dec512d8b_ba_nofinetune.pth",
+        in_dir="/cbica/home/maggiors/Datasets/BAScores/ISTAG_CN_All/istaging_2_new/diabetes/diabetes_PURE",
+        out_csv="ba_diabetes_nichart_vit_base_patch8_dec512d.csv",
+        device="cuda",
+    )
