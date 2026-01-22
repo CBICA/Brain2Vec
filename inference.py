@@ -53,7 +53,7 @@ def mae_inference(
 
         with torch.autocast(device_type=device, dtype=torch.bfloat16):
             features, _, _ = model.forward_encoder(imgs)
-            for i in range(features):
+            for i in range(len(features)):
                 out_features[mrids[i]] = features[i]
 
     with open(out_json, "w") as f:
