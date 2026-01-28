@@ -210,12 +210,11 @@ class MaskedAutoencoderViT(nn.Module):
         return x_masked, mask, ids_restore
 
     def block_masking(self, x: torch.Tensor, mask_ratio: float) -> Any:
-        N, L, D = x.shape
+        N, L, _ = x.shape
         device = x.device
 
         grid_size = int(round(L ** (1 / 3)))
-        num_masked = int(L * mask_ratio)
-        block_size = int(round(num_masked ** (1 / 3)))
+        block_size = int(grid_size * mask_ratio)
 
         block_size = min(block_size, grid_size)
         max_start = grid_size - block_size
