@@ -276,7 +276,7 @@ class MaskedAutoencoderViT(nn.Module):
         self,
         x: torch.Tensor,
         masking_type: str = "random",
-        mask_ratio: float = 0.75,
+        mask_ratio: float = 0.85,
         ground_truth: Optional[torch.Tensor] = None,
     ) -> Any:
         x = self.patch_embed(x)
@@ -354,7 +354,7 @@ class MaskedAutoencoderViT(nn.Module):
         x: torch.Tensor,
         masking_type: str = "random",
         ground_truth: Optional[torch.Tensor] = None,
-        mask_ratio: float = 0.75,
+        mask_ratio: float = 0.85,
     ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         latent, mask, ids_restore = self.forward_encoder(
             x,
