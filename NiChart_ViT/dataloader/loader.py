@@ -90,8 +90,7 @@ class NiftiLoader(Dataset):
 def augment(img: tio.ScalarImage) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
     resize = tio.Resize((128, 128, 128))
     normalize = tio.ZNormalization(masking_method=None)
-    baseline_img = resize(img)
-    baseline_img = normalize(baseline_img)
+    img = resize(img)
 
     transforms = [
         tio.RandomBlur(2),
@@ -105,19 +104,23 @@ def augment(img: tio.ScalarImage) -> Tuple[torch.Tensor, torch.Tensor, torch.Ten
             image_interpolation="linear",
             default_pad_value="minimum",
         ),
+        tio.RandomElasticDeformation(num_control_points=7),
     ]
 
     idx = np.random.random_sample(len(transforms), 2)
     aug_1, aug_2 = transforms[idx[0]], transforms[idx[1]]
 
-    img_1 = aug_1(baseline_img)
-    img_2 = aug_2(baseline_img)
+    img_1 = aug_1(img)
+    img_2 = aug_2(img)
 
-    baseline_img = torch.tensor(baseline_img.data, dtype=torch.float32)
+    img_1 = normalize(img_1)
+    img_2 = normalize(img_2)
+
+    img = torch.tensor(img.data, dtype=torch.float32)
     img_1 = torch.tensor(img_1.data, dtype=torch.float32)
     img_2 = torch.tensor(img_2.data, dtype=torch.float32)
 
-    return baseline_img, img_1, img_2
+    return img, img_1, img_2
 
 
 def create_dataloaders(
