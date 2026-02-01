@@ -8,6 +8,26 @@ import torch
 import torch.distributed as dist
 
 
+def get_off_diagonal_elements(x: torch.Tensor) -> torch.Tensor:
+    res = x.clone()
+    res.diagonal(dim1=-1, dim2=-2).zero_()
+    return res
+
+
+def barlow_twins_loss(z_a: torch.Tensor, z_b: torch.Tensor) -> torch.Tensor:
+    z_a_norm = (z_a - z_a.mean(0)) / z_a.std(0)  # (b, F, 1)
+    z_b_norm = (z_b - z_b.mean(0)) / z_b.std(0)  # (b, F, 1)
+
+    c = torch.matmul(z_a_norm, z_b_norm.permute(0, 2, 1)) / (z_a.size()[0])  # [b, F, F]
+
+    c_diff = (c - torch.eye(z_a.size()[1])).pow(2)  # [b, F, F]
+
+    c_diff.diagonal(dim1=-1, dim2=-2).mul_(5 * 1e-3)
+    loss = c_diff.sum()
+
+    return loss
+
+
 def init_distributed_mode(args: Any) -> None:
     if "SLURM_PROCID" in os.environ:
         args.rank = int(os.environ["SLURM_PROCID"])

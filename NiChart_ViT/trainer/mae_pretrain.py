@@ -2,7 +2,13 @@ import torch
 from torch.utils.data import DataLoader
 from tqdm.auto import tqdm
 
-from NiChart_ViT.trainer.utils import EarlyStopper, all_reduce_mean, save_model
+from NiChart_ViT.dataloader.loader import augment
+from NiChart_ViT.trainer.utils import (
+    EarlyStopper,
+    all_reduce_mean,
+    barlow_twins_loss,
+    save_model,
+)
 
 
 def train_step(
@@ -19,17 +25,24 @@ def train_step(
     mse = 0.0
 
     for X, _ in dataloader:
-        X = X.to(device)
-        X = X.float()
+        X, x_a, x_b = augment(X)
+        X, x_a, x_b = X.to(device), x_a.to(device), x_b.to(device)
+        X, x_a, x_b = X.float(), x_a.float(), x_b.float()
 
         optimizer.zero_grad()
 
         with torch.autocast(device_type="cuda", dtype=torch.bfloat16):
-            loss, _, _ = model(
+            rec_loss, _, _ = model(
                 X,
                 masking_type=masking_type,
                 mask_ratio=mask_ratio,
             )
+
+            features_a, _, _ = model.forward_encoder(x_a)
+            features_b, _, _ = model.forward_encoder(x_b)
+
+            bt_loss = barlow_twins_loss(features_a[:, 0, :], features_b[:, 0, :])
+            loss = rec_loss + 0.25 * bt_loss
 
         loss.backward()
 
@@ -60,15 +73,22 @@ def test_step(
 
     with torch.no_grad():
         for X, _ in dataloader:
-            X = X.to(device)
-            X = X.float()
+            X, x_a, x_b = augment(X)
+            X, x_a, x_b = X.to(device), x_a.to(device), x_b.to(device)
+            X, x_a, x_b = X.float(), x_a.float(), x_b.float()
 
             with torch.autocast(device_type="cuda", dtype=torch.bfloat16):
-                loss, _, _ = model(
+                rec_loss, _, _ = model(
                     X,
                     masking_type=masking_type,
                     mask_ratio=mask_ratio,
                 )
+
+                features_a, _, _ = model.forward_encoder(x_a)
+                features_b, _, _ = model.forward_encoder(x_b)
+
+                bt_loss = barlow_twins_loss(features_a[:, 0, :], features_b[:, 0, :])
+                loss = rec_loss + 0.25 * bt_loss
 
             mse += loss.item()
 
