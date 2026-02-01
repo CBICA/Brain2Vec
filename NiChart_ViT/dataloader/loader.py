@@ -90,7 +90,8 @@ class NiftiLoader(Dataset):
 def augment(img: tio.ScalarImage) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
     resize = tio.Resize((128, 128, 128))
     normalize = tio.ZNormalization(masking_method=None)
-    baseline_img = normalize(resize(img))
+    baseline_img = resize(img)
+    baseline_img = normalize(baseline_img)
 
     transforms = [
         tio.RandomBlur(2),
