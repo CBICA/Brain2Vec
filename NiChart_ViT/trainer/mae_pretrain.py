@@ -26,7 +26,11 @@ def train_step(
 
     for data_iter_step, X in enumerate(dataloader):
         X, x_a, x_b, _ = X
-        X, x_a, x_b = X.to(device), x_a.to(device), x_b.to(device)
+        X, x_a, x_b = (
+            X.to(device, non_blocking=True),
+            x_a.to(device, non_blocking=True),
+            x_b.to(device, non_blocking=True),
+        )
         X, x_a, x_b = X.float(), x_a.float(), x_b.float()
 
         with torch.autocast(device_type="cuda", dtype=torch.bfloat16):
@@ -81,7 +85,11 @@ def test_step(
     with torch.no_grad():
         for X in dataloader:
             X, x_a, x_b, _ = X
-            X, x_a, x_b = X.to(device), x_a.to(device), x_b.to(device)
+            X, x_a, x_b = (
+                X.to(device, non_blocking=True),
+                x_a.to(device, non_blocking=True),
+                x_b.to(device, non_blocking=True),
+            )
             X, x_a, x_b = X.float(), x_a.float(), x_b.float()
 
             with torch.autocast(device_type="cuda", dtype=torch.bfloat16):
