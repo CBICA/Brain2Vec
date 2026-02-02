@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from typing import Any, Optional, Tuple
+from typing import Any, Optional
 
 import numpy as np
 import pandas as pd
@@ -80,47 +80,42 @@ class NiftiLoader(Dataset):
             mrid = self.mrids[index]
 
         img = tio.ScalarImage(img_path)
+        resize = tio.Resize((128, 128, 128))
+        normalize = tio.ZNormalization(masking_method=None)
+        img = resize(img)
+
+        transforms = [
+            tio.RandomBlur(2),
+            tio.RandomGamma(0.3),
+            tio.RandomFlip(axes=("LR",)),
+            tio.RandomNoise(mean=0, std=2),
+            tio.Affine(
+                scales=(1, 1, 1),
+                degrees=tuple(np.random.uniform(low=-4, high=40, size=3)),
+                translation=tuple(np.random.uniform(low=-10, hugh=10, size=3)),
+                image_interpolation="linear",
+                default_pad_value="minimum",
+            ),
+            tio.RandomElasticDeformation(num_control_points=7),
+        ]
+
+        idx = np.random.random_sample(len(transforms), 2)
+        aug_1, aug_2 = transforms[idx[0]], transforms[idx[1]]
+
+        img_1 = aug_1(img)
+        img_2 = aug_2(img)
+
+        img_1 = normalize(img_1)
+        img_2 = normalize(img_2)
+
+        img = torch.tensor(img.data, dtype=torch.float32)
+        img_1 = torch.tensor(img_1.data, dtype=torch.float32)
+        img_2 = torch.tensor(img_2.data, dtype=torch.float32)
 
         if self.mode == "train":
-            return img, torch.tensor(label, dtype=torch.float32)
+            return img, img_1, img_2, torch.tensor(label, dtype=torch.float32)
         else:
-            return img, mrid
-
-
-def augment(img: tio.ScalarImage) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
-    resize = tio.Resize((128, 128, 128))
-    normalize = tio.ZNormalization(masking_method=None)
-    img = resize(img)
-
-    transforms = [
-        tio.RandomBlur(2),
-        tio.RandomGamma(0.3),
-        tio.RandomFlip(axes=("LR",)),
-        tio.RandomNoise(mean=0, std=2),
-        tio.Affine(
-            scales=(1, 1, 1),
-            degrees=tuple(np.random.uniform(low=-4, high=40, size=3)),
-            translation=tuple(np.random.uniform(low=-10, hugh=10, size=3)),
-            image_interpolation="linear",
-            default_pad_value="minimum",
-        ),
-        tio.RandomElasticDeformation(num_control_points=7),
-    ]
-
-    idx = np.random.random_sample(len(transforms), 2)
-    aug_1, aug_2 = transforms[idx[0]], transforms[idx[1]]
-
-    img_1 = aug_1(img)
-    img_2 = aug_2(img)
-
-    img_1 = normalize(img_1)
-    img_2 = normalize(img_2)
-
-    img = torch.tensor(img.data, dtype=torch.float32)
-    img_1 = torch.tensor(img_1.data, dtype=torch.float32)
-    img_2 = torch.tensor(img_2.data, dtype=torch.float32)
-
-    return img, img_1, img_2
+            return img, img_1, img_2, mrid
 
 
 def create_dataloaders(

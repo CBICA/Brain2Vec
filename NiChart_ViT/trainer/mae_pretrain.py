@@ -2,7 +2,6 @@ import torch
 from torch.utils.data import DataLoader
 from tqdm.auto import tqdm
 
-from NiChart_ViT.dataloader.loader import augment
 from NiChart_ViT.trainer.utils import (
     EarlyStopper,
     all_reduce_mean,
@@ -25,7 +24,7 @@ def train_step(
     mse = 0.0
 
     for X, _ in dataloader:
-        X, x_a, x_b = augment(X)
+        X, x_a, x_b = X
         X, x_a, x_b = X.to(device), x_a.to(device), x_b.to(device)
         X, x_a, x_b = X.float(), x_a.float(), x_b.float()
 
@@ -73,7 +72,7 @@ def test_step(
 
     with torch.no_grad():
         for X, _ in dataloader:
-            X, x_a, x_b = augment(X)
+            X, x_a, x_b = X
             X, x_a, x_b = X.to(device), x_a.to(device), x_b.to(device)
             X, x_a, x_b = X.float(), x_a.float(), x_b.float()
 
