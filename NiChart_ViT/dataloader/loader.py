@@ -92,7 +92,7 @@ class NiftiLoader(Dataset):
             tio.Affine(
                 scales=(1, 1, 1),
                 degrees=tuple(np.random.uniform(low=-4, high=40, size=3)),
-                translation=tuple(np.random.uniform(low=-10, hugh=10, size=3)),
+                translation=tuple(np.random.uniform(low=-10, high=10, size=3)),
                 image_interpolation="linear",
                 default_pad_value="minimum",
             ),
