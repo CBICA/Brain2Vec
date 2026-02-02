@@ -41,7 +41,7 @@ def train_step(
             features_b, _, _ = model.module.forward_encoder(x_b)
 
             bt_loss = barlow_twins_loss(features_a[:, 0, :], features_b[:, 0, :])
-            loss = rec_loss + bt_loss
+            loss = rec_loss + 10 * bt_loss
 
         loss.backward()
 
@@ -87,7 +87,7 @@ def test_step(
                 features_b, _, _ = model.module.forward_encoder(x_b)
 
                 bt_loss = barlow_twins_loss(features_a[:, 0, :], features_b[:, 0, :])
-                loss = rec_loss + bt_loss
+                loss = rec_loss + 10 * bt_loss
 
             mse += loss.item()
 
