@@ -105,6 +105,7 @@ class NiftiLoader(Dataset):
         img_1 = aug_1(img)
         img_2 = aug_2(img)
 
+        img = normalize(img)
         img_1 = normalize(img_1)
         img_2 = normalize(img_2)
 
