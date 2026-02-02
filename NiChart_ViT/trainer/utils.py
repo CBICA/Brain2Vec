@@ -6,7 +6,6 @@ from typing import Any
 
 import torch
 import torch.distributed as dist
-from torch._six import inf
 
 
 def get_off_diagonal_elements(x: torch.Tensor) -> torch.Tensor:
@@ -77,7 +76,7 @@ def get_grad_norm_(parameters: Any, norm_type: float = 2.0) -> torch.Tensor:
     if len(parameters) == 0:
         return torch.tensor(0.0)
     device = parameters[0].grad.device
-    if norm_type == inf:
+    if torch.isinf(torch.tensor(norm_type)):
         total_norm = max(p.grad.detach().abs().max().to(device) for p in parameters)
     else:
         total_norm = torch.norm(
