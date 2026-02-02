@@ -37,7 +37,7 @@ def train_step(
                 mask_ratio=mask_ratio,
             )
 
-            features_a, _, _ = model.forward_encoder(x_a)
+            features_a, _, _ = model.module.forward_encoder(x_a)
             features_b, _, _ = model.forward_encoder(x_b)
 
             bt_loss = barlow_twins_loss(features_a[:, 0, :], features_b[:, 0, :])
@@ -71,8 +71,8 @@ def test_step(
     mse = 0.0
 
     with torch.no_grad():
-        for X, _ in dataloader:
-            X, x_a, x_b = X
+        for X in dataloader:
+            X, x_a, x_b, _ = X
             X, x_a, x_b = X.to(device), x_a.to(device), x_b.to(device)
             X, x_a, x_b = X.float(), x_a.float(), x_b.float()
 
