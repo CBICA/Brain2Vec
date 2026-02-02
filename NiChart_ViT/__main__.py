@@ -173,6 +173,7 @@ def run_mae_pretrain(args: Any) -> None:
         optimizer=optimizer,
         epochs=args.epochs,
         patience=args.patience,
+        accum_iter=args.accum_iter,
         target_dir=args.out_dir,
         model_name=args.model_name,
         device=args.gpu,
@@ -393,6 +394,13 @@ def main() -> None:
         "--optimizer",
         type=str,
         default="Adadelta",
+        required=False,
+    )
+
+    mae_train.add_argument(
+        "--accum_iter",
+        type=int,
+        default=1,
         required=False,
     )
 
