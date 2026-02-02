@@ -195,6 +195,7 @@ def create_dataloaders(
                 sampler=train_sampler,
                 batch_size=batch_size,
                 num_workers=os.cpu_count() // 4,  # type: ignore
+                pin_memory=True,
             )
         else:
             train_dataloader = DataLoader(
@@ -215,13 +216,14 @@ def create_dataloaders(
                 test_loader,
                 num_replicas=num_tasks,
                 rank=global_rank,
-                shuffle=True,
+                shuffle=False,
             )
             test_dataloader = DataLoader(
                 test_loader,
                 sampler=test_sampler,
                 batch_size=batch_size,
                 num_workers=os.cpu_count() // 4,  # type: ignore
+                pin_memory=True,
             )
         else:
             test_dataloader = DataLoader(
@@ -241,13 +243,14 @@ def create_dataloaders(
                 eval_loader,
                 num_replicas=num_tasks,
                 rank=global_rank,
-                shuffle=True,
+                shuffle=False,
             )
             eval_dataloader = DataLoader(
                 eval_loader,
                 sampler=eval_sampler,
                 batch_size=1,
                 num_workers=os.cpu_count() // 4,  # type: ignore
+                pin_memory=True,
             )
         else:
             eval_dataloader = DataLoader(
