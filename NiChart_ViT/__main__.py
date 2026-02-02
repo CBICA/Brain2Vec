@@ -142,11 +142,12 @@ def run_mae_pretrain(args: Any) -> None:
         global_rank=global_rank if args.distributed else None,
     )
 
-    eff_batch_size = args.batch_size * args.world_size
+    eff_batch_size = args.batch_size * args.world_size * args.accum_iter
     eff_lr = args.lr * eff_batch_size / 256
 
     print("Base lr: %.2e" % args.lr, force=True, flush=True)  # type: ignore
     print("Actual lr: %.2e" % eff_lr, force=True, flush=True)  # type: ignore
+    print(f"Accumulate grad iterations: {args.accum_iter}", force=True, flush=True)  # type: ignore
     print(f"effective batch size: {eff_batch_size}", force=True, flush=True)  # type: ignore
 
     if args.distributed:
