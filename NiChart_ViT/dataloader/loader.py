@@ -99,7 +99,7 @@ class NiftiLoader(Dataset):
             tio.RandomElasticDeformation(num_control_points=7),
         ]
 
-        idx = np.random.random_sample(len(transforms), 2)
+        idx = np.random.choice(np.arange(len(transforms)), size=2, replace=False)
         aug_1, aug_2 = transforms[idx[0]], transforms[idx[1]]
 
         img_1 = aug_1(img)
