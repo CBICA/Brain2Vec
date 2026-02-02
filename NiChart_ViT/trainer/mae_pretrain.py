@@ -23,8 +23,8 @@ def train_step(
 
     mse = 0.0
 
-    for X, _ in dataloader:
-        X, x_a, x_b = X
+    for X in dataloader:
+        X, x_a, x_b, _ = X
         X, x_a, x_b = X.to(device), x_a.to(device), x_b.to(device)
         X, x_a, x_b = X.float(), x_a.float(), x_b.float()
 
