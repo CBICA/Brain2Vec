@@ -18,7 +18,6 @@ def barlow_twins_loss(z_a: torch.Tensor, z_b: torch.Tensor) -> torch.Tensor:
     z_a_norm = (z_a - z_a.mean(0)) / z_a.std(0)  # (b, F)
     z_b_norm = (z_b - z_b.mean(0)) / z_b.std(0)  # (b, F)
 
-    print(z_a_norm.size())
     c = torch.matmul(z_a_norm.permute(1, 0), z_b_norm) / (z_a.size()[0])  # [F, F]
 
     c_diff = (c - torch.eye(z_a.size()[1], device=z_a.device)).pow(2)  # [F, F]
