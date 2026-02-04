@@ -15,14 +15,16 @@ def get_off_diagonal_elements(x: torch.Tensor) -> torch.Tensor:
 
 
 def barlow_twins_loss(z_a: torch.Tensor, z_b: torch.Tensor) -> torch.Tensor:
-    z_a_norm = (z_a - z_a.mean(0)) / z_a.std(0)  # (b, F)
-    z_b_norm = (z_b - z_b.mean(0)) / z_b.std(0)  # (b, F)
+    z_a_norm = (z_a - z_a.mean(0)) / (z_a.std(0) + 1e-6)  # (b, F)
+    z_b_norm = (z_b - z_b.mean(0)) / (z_b.std(0) + 1e-6)  # (b, F)
 
     c = torch.matmul(z_a_norm.permute(1, 0), z_b_norm) / (z_a.size()[0])  # [F, F]
 
     c_diff = (c - torch.eye(z_a.size()[1], device=z_a.device)).pow(2)  # [F, F]
 
-    c_diff.diagonal(dim1=-1, dim2=-2).mul_(5 * 1e-3)
+    off_diag = ~torch.eye(c_diff.size(0), dtype=torch.bool, device=c.device)
+    c_diff[off_diag] *= 5 * 1e-3
+
     loss = c_diff.sum()
 
     return loss
