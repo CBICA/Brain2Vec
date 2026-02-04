@@ -40,11 +40,15 @@ def train_step(
                 mask_ratio=mask_ratio,
             )
 
-            features_a, _, _ = model.module.forward_encoder(x_a)
-            features_b, _, _ = model.module.forward_encoder(x_b)
+            features_a, _, _ = model.module.forward_encoder(
+                x_a, masking_type="random", mask_ratio=0.0
+            )
+            features_b, _, _ = model.module.forward_encoder(
+                x_b, masking_type="random", mask_ratio=0.0
+            )
 
             bt_loss = barlow_twins_loss(features_a[:, 0, :], features_b[:, 0, :])
-            loss = rec_loss + 10 * bt_loss
+            loss = 0.7 * rec_loss + 0.3 * bt_loss
 
         loss_value = loss.item()
         loss /= accum_iter
@@ -107,7 +111,7 @@ def test_step(
                 )
 
                 bt_loss = barlow_twins_loss(features_a[:, 0, :], features_b[:, 0, :])
-                loss = rec_loss + 10 * bt_loss
+                loss = 0.7 * rec_loss + 0.3 * bt_loss
 
             total_loss += loss.item()
 
