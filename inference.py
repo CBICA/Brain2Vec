@@ -12,7 +12,7 @@ from torch.utils.data import DataLoader
 from NiChart_ViT.dataloader.loader import NiftiLoader
 from NiChart_ViT.models.mae import mae_vit_base_patch8_dec512d8b
 from NiChart_ViT.models.vit import vit_base_patch8
-from NiChart_ViT.trainer.utils import load_weights
+from NiChart_ViT.trainer.utils import barlow_twins_loss, load_weights
 
 
 def test_dataloader(in_dir: str) -> DataLoader:
@@ -44,23 +44,54 @@ def mae_inference(
 
     model.to(device)
     model.eval()
-    out_features = {}
+    # out_features = {}
+
+    total_loss = 0.0
 
     for _, (imgs, mrids) in enumerate(dataloader):
-        imgs = imgs.to(device)
-        imgs = imgs.float()
-        imgs.requires_grad_()
+        ###
+        X, x_a, x_b = imgs
+        X, x_a, x_b = (
+            X.to(device, non_blocking=True),
+            x_a.to(device, non_blocking=True),
+            x_b.to(device, non_blocking=True),
+        )
+        X, x_a, x_b = X.float(), x_a.float(), x_b.float()
+        ###
+        # imgs = imgs.to(device)
+        # imgs = imgs.float()
 
         with torch.autocast(device_type=device, dtype=torch.bfloat16):
-            features, _, _ = model.forward_encoder(imgs)
-            features = features[:, 0, :]
-            for i in range(len(mrids)):
-                out_features[mrids[i]] = features[i].cpu().tolist()
+            ###
+            rec_loss, _, _ = model(
+                imgs,
+                masking_type="random",
+                mask_ratio=0.85,
+            )
 
-    with open(out_json, "w") as f:
-        json.dump(out_features, f)
+            features_a, _, _ = model.module.forward_encoder(
+                x_a, masking_type="random", mask_ratio=0.0
+            )
+            features_b, _, _ = model.module.forward_encoder(
+                x_b, masking_type="random", mask_ratio=0.0
+            )
 
-    print(f"Inference results saved to {out_json} successfully!")
+            bt_loss = barlow_twins_loss(features_a[:, 0, :], features_b[:, 0, :])
+            loss = 0.7 * rec_loss + 0.3 * bt_loss
+            total_loss += loss.item()
+
+    total_loss = total_loss / float(len(dataloader))
+    print(f"Total loss: {total_loss}")
+    ###
+    # features, _, _ = model.forward_encoder(imgs)
+    # features = features[:, 0, :]
+    # for i in range(len(mrids)):
+    #     out_features[mrids[i]] = features[i].cpu().tolist()
+
+    # with open(out_json, "w") as f:
+    #     json.dump(out_features, f)
+
+    # print(f"Inference results saved to {out_json} successfully!")
 
 
 @torch.no_grad()  # type: ignore
@@ -85,7 +116,6 @@ def vit_inference(
     for _, (imgs, mrids) in enumerate(dataloader):
         imgs = imgs.to(device)
         imgs = imgs.float()
-        imgs.requires_grad_()
 
         with torch.autocast(device_type=device, dtype=torch.bfloat16):
             if return_features:
@@ -197,11 +227,17 @@ def run_one_scan(scan: str, weights: str, ground_truth: Optional[str] = None) ->
 
 
 if __name__ == "__main__":
-    vit_inference(
-        model=vit_base_patch8(img_size=128, num_classes=1),
-        mode="regression",
-        model_weights="weights/NiChart_vit_base_patch8_dec512d8b_ba.pth",
-        in_dir="/cbica/home/maggiors/Datasets/BAScores/ISTAG_CN_All/istaging_2_new/AD/AD_PURE",
-        out_csv="ba_ad_nichart_vit_base_patch8_dec512d.csv",
-        device="cuda",
+    mae_inference(
+        model=mae_vit_base_patch8_dec512d8b(img_size=128),
+        model_weights="",
+        in_dir="",
+        out_json="",
     )
+    # vit_inference(
+    #     model=vit_base_patch8(img_size=128, num_classes=1),
+    #     mode="regression",
+    #     model_weights="weights/NiChart_vit_base_patch8_dec512d8b_ba.pth",
+    #     in_dir="/cbica/home/maggiors/Datasets/BAScores/ISTAG_CN_All/istaging_2_new/AD/AD_PURE",
+    #     out_csv="ba_ad_nichart_vit_base_patch8_dec512d.csv",
+    #     device="cuda",
+    # )
