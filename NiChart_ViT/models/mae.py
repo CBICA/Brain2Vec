@@ -2,10 +2,15 @@ from functools import partial
 from typing import Any, Optional, Tuple
 
 import torch
+import torch.distributed as dist
 import torch.nn as nn
 from timm.models.vision_transformer import Block
 
-from NiChart_ViT.models.utils import PatchEmbedding, get_3d_sincos_pos_embed
+from NiChart_ViT.models.utils import (
+    PatchEmbedding,
+    get_3d_sincos_pos_embed,
+    off_diagonal,
+)
 
 
 class MaskedAutoencoderViT(nn.Module):
@@ -50,6 +55,19 @@ class MaskedAutoencoderViT(nn.Module):
             ]
         )
         self.norm = norm_layer(embed_dim)
+
+        # Projector specifics
+        projector_layers = []
+        for i in range(3):
+            if i == 0:
+                projector_layers.append(nn.Linear(768, 2048, bias=False))
+            else:
+                projector_layers.append(nn.Linear(2048, 2048, bias=False))
+            projector_layers.append(nn.BatchNorm1d(2048))
+            projector_layers.append(nn.ReLU(inplace=True))
+
+        self.projector = nn.Sequential(*projector_layers)
+        self.projector_bn = nn.BatchNorm1d(2048, affine=False)
 
         # Decoder specifics
         self.decoder_embed = nn.Linear(embed_dim, decoder_embed_dim, bias=True)
@@ -330,42 +348,73 @@ class MaskedAutoencoderViT(nn.Module):
         return x
 
     def forward_loss(
-        self, imgs: torch.Tensor, pred: torch.Tensor, mask: torch.Tensor
+        self, imgs: torch.Tensor, preds: list[torch.Tensor], mask: torch.Tensor
     ) -> torch.Tensor:
         """
         imgs: [N, 3, D, H, W]
         pred: [N, L, p*p*p *3]
         mask: [N, L], 0 is keep, 1 is remove,
         """
+        rec_pred, z_1, z_2 = preds[0], preds[1], preds[2]
+
+        # Reconstruction loss
         target = self.patchify(imgs)
         if self.norm_pix_loss:
             mean = target.mean(dim=-1, keepdim=True)
             var = target.var(dim=-1, keepdim=True)
             target = (target - mean) / (var + 1.0e-6) ** 0.5
 
-        loss = (pred - target) ** 2
-        loss = loss.mean(dim=-1)  # [N, L], mean loss per patch
+        rec_loss = (rec_pred - target) ** 2
+        rec_loss = rec_loss.mean(dim=-1)  # [N, L], mean loss per patch
 
-        loss = (loss * mask).sum() / mask.sum()  # mean loss on removed patches
-        return loss
+        rec_loss = (rec_loss * mask).sum() / mask.sum()  # mean loss on removed patches
+
+        # Barlow Twins loss
+        c = self.projector_bn(z_1).T @ self.projector_bn(z_2)
+        c.div_(1024)  # just for now, need change
+
+        if dist.is_initialized():
+            dist.all_reduce(c)
+
+        on_diag = torch.diagonal(c).add_(-1).pow_(2).sum()
+        off_diag = off_diagonal(c).pow_(2).sum()
+        bt_loss = on_diag + 5e-3 * off_diag
+
+        return rec_loss + 5e-3 * bt_loss
 
     def forward(
         self,
-        x: torch.Tensor,
+        x: list[torch.Tensor],
         masking_type: str = "random",
         ground_truth: Optional[torch.Tensor] = None,
         mask_ratio: float = 0.85,
     ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         latent, mask, ids_restore = self.forward_encoder(
-            x,
+            x[0],
             masking_type=masking_type,
             mask_ratio=mask_ratio,
             ground_truth=ground_truth,
         )
-        pred = self.forward_decoder(latent, ids_restore)
-        loss = self.forward_loss(x, pred, mask)
+        preds = []
+        preds.append(
+            self.forward_decoder(latent, ids_restore)
+        )  # Reconstruction prediction
+        y_1, _, _ = self.forward_encoder(
+            x[1],
+            masking_type=masking_type,
+            mask_ratio=0.0,
+        )
+        y_2, _, _ = self.forward_encoder(
+            x[2],
+            masking_type=masking_type,
+            mask_ratio=0.0,
+        )
+        z_1, z_2 = self.projector(y_1[:, 0, :]), self.projector(y_2[:, 0, :])
+        preds.append(z_1)
+        preds.append(z_2)
+        loss = self.forward_loss(x[0], preds, mask)
 
-        return loss, pred, mask
+        return loss, preds[0], mask
 
 
 def mae_vit_base_patch8_dec512d8b(**kwargs: Any) -> nn.Module:

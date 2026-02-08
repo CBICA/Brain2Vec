@@ -11,7 +11,8 @@ from torch.utils.data import DataLoader
 
 from NiChart_ViT.dataloader.loader import NiftiLoader
 from NiChart_ViT.models.mae import mae_vit_base_patch8_dec512d8b
-from NiChart_ViT.models.vit import vit_base_patch8
+
+# from NiChart_ViT.models.vit import vit_base_patch8
 from NiChart_ViT.trainer.utils import barlow_twins_loss, load_weights
 
 

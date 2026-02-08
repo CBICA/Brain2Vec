@@ -151,6 +151,7 @@ def run_mae_pretrain(args: Any) -> None:
     print(f"effective batch size: {eff_batch_size}", force=True, flush=True)  # type: ignore
 
     if args.distributed:
+        model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(model)
         model = torch.nn.parallel.DistributedDataParallel(
             model, device_ids=[args.gpu], find_unused_parameters=True
         )
@@ -232,6 +233,7 @@ def run_vit_finetune(args: Any) -> None:
     print(f"effective batch size: {eff_batch_size}", force=True, flush=True)  # type: ignore
 
     if args.distributed:
+        model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(model)
         model = torch.nn.parallel.DistributedDataParallel(
             model, device_ids=[args.gpu], find_unused_parameters=True
         )

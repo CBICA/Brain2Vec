@@ -4,7 +4,7 @@ from tqdm.auto import tqdm
 
 from NiChart_ViT.trainer.utils import EarlyStopper
 from NiChart_ViT.trainer.utils import NativeScalerWithGradNormCount as NativeScaler
-from NiChart_ViT.trainer.utils import all_reduce_mean, barlow_twins_loss, save_model
+from NiChart_ViT.trainer.utils import all_reduce_mean, save_model
 
 
 def train_step(
@@ -34,21 +34,11 @@ def train_step(
         X, x_a, x_b = X.float(), x_a.float(), x_b.float()
 
         with torch.autocast(device_type="cuda", dtype=torch.bfloat16):
-            rec_loss, _, _ = model(
-                X,
+            loss, _, _ = model(
+                [X, x_a, x_b],
                 masking_type=masking_type,
                 mask_ratio=mask_ratio,
             )
-
-            features_a, _, _ = model.module.forward_encoder(
-                x_a, masking_type="random", mask_ratio=0.0
-            )
-            features_b, _, _ = model.module.forward_encoder(
-                x_b, masking_type="random", mask_ratio=0.0
-            )
-
-            bt_loss = barlow_twins_loss(features_a[:, 0, :], features_b[:, 0, :])
-            loss = 0.7 * rec_loss + 0.3 * bt_loss
 
         loss_value = loss.item()
         loss /= accum_iter
@@ -97,21 +87,11 @@ def test_step(
             X, x_a, x_b = X.float(), x_a.float(), x_b.float()
 
             with torch.autocast(device_type="cuda", dtype=torch.bfloat16):
-                rec_loss, _, _ = model(
-                    X,
+                loss, _, _ = model(
+                    [X, x_a, x_b],
                     masking_type=masking_type,
                     mask_ratio=mask_ratio,
                 )
-
-                features_a, _, _ = model.module.forward_encoder(
-                    x_a, masking_type="random", mask_ratio=0.0
-                )
-                features_b, _, _ = model.module.forward_encoder(
-                    x_b, masking_type="random", mask_ratio=0.0
-                )
-
-                bt_loss = barlow_twins_loss(features_a[:, 0, :], features_b[:, 0, :])
-                loss = 0.7 * rec_loss + 0.3 * bt_loss
 
             total_loss += loss.item()
 
