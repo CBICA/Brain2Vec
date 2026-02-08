@@ -376,11 +376,11 @@ class MaskedAutoencoderViT(nn.Module):
         if dist.is_initialized():
             dist.all_reduce(c)
 
-        on_diag = torch.diagonal(c).add_(-1).pow_(2).sum()
-        off_diag = off_diagonal(c).pow_(2).sum()
+        on_diag = torch.diagonal(c).add_(-1).pow_(2).mean()
+        off_diag = off_diagonal(c).pow_(2).mean()
         bt_loss = on_diag + 5e-3 * off_diag
 
-        return rec_loss + 5e-3 * bt_loss
+        return rec_loss + 0.4 * bt_loss
 
     def forward(
         self,
