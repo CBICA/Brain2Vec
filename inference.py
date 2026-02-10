@@ -13,7 +13,7 @@ from NiChart_ViT.dataloader.loader import NiftiLoader
 from NiChart_ViT.models.mae import mae_vit_base_patch8_dec512d8b
 
 # from NiChart_ViT.models.vit import vit_base_patch8
-from NiChart_ViT.trainer.utils import barlow_twins_loss, load_weights
+from NiChart_ViT.trainer.utils import load_weights
 
 
 def test_dataloader(in_dir: str) -> DataLoader:
@@ -39,7 +39,7 @@ def mae_inference(
     out_json: str,
     device: str = "cuda",
 ) -> None:
-    load_weights(model, model_weights, device)
+    # load_weights(model, model_weights, device)
 
     dataloader = test_dataloader(in_dir)
 
@@ -49,9 +49,9 @@ def mae_inference(
 
     total_loss = 0.0
 
-    for _, (imgs, mrids) in enumerate(dataloader):
+    for _, (imgs) in enumerate(dataloader):
         ###
-        X, x_a, x_b = imgs
+        X, x_a, x_b, _ = imgs
         X, x_a, x_b = (
             X.to(device, non_blocking=True),
             x_a.to(device, non_blocking=True),
@@ -64,21 +64,12 @@ def mae_inference(
 
         with torch.autocast(device_type=device, dtype=torch.bfloat16):
             ###
-            rec_loss, _, _ = model(
-                imgs,
+            loss, _, _ = model(
+                [X, x_a, x_b],
                 masking_type="random",
-                mask_ratio=0.85,
+                mask_ratio=0.8,
             )
 
-            features_a, _, _ = model.module.forward_encoder(
-                x_a, masking_type="random", mask_ratio=0.0
-            )
-            features_b, _, _ = model.module.forward_encoder(
-                x_b, masking_type="random", mask_ratio=0.0
-            )
-
-            bt_loss = barlow_twins_loss(features_a[:, 0, :], features_b[:, 0, :])
-            loss = 0.7 * rec_loss + 0.3 * bt_loss
             total_loss += loss.item()
 
     total_loss = total_loss / float(len(dataloader))
@@ -231,8 +222,9 @@ if __name__ == "__main__":
     mae_inference(
         model=mae_vit_base_patch8_dec512d8b(img_size=128),
         model_weights="",
-        in_dir="",
+        in_dir="test_images/test_dir",
         out_json="",
+        device="cpu",
     )
     # vit_inference(
     #     model=vit_base_patch8(img_size=128, num_classes=1),
