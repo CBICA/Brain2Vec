@@ -215,7 +215,7 @@ def run_vit_finetune(args: Any) -> None:
     avail_models = available_models(
         img_size=args.img_size,
         num_classes=1 if args.num_classes == -1 else args.num_classes,
-        projector=None if args.mode == "ssl" else args.projector,
+        projector=args.projector if args.mode == "ssl" else None,
         eff_batch_size=args.batch_size * args.world_size * args.accum_iter,
         _lambda=args.lambd,
         device=args.device,
