@@ -104,6 +104,7 @@ class BarlowTwins(nn.Module):
         eff_batch_size: int,
     ) -> None:
 
+        super(BarlowTwins, self).__init__()
         self.vit_backbone = vit_model
         self.projector_dims = list(map(int, projector.split("-")))
         self._lambda = _lambda
