@@ -152,7 +152,7 @@ class BarlowTwinsLoader(NiftiLoader):
             tio.RandomMotion(),
         ]
 
-        idx = np.random_choice(np.arange(len(transforms)), size=4, replace=False)
+        idx = np.random.choice(np.arange(len(transforms)), size=4, replace=False)
         aug_1, aug_2 = tio.Compose(
             [transforms[idx[0]], transforms[idx[1]]]
         ), tio.Compose([transforms[idx[2]], transforms[idx[3]]])
