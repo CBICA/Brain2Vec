@@ -114,7 +114,7 @@ class BarlowTwins(nn.Module):
 
         c.div_(self.eff_batch_size)
         if torch.distributed.is_initialized():
-            torch.distributed.all_reduce()
+            torch.distributed.all_reduce(c)
 
         on_diag = torch.diagonal(c).add_(-1).pow_(2).sum()
         off_diag = off_diagonal(c).pow_(2).sum()
