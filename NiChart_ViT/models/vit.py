@@ -110,12 +110,15 @@ class BarlowTwins(nn.Module):
         self._lambda = _lambda
         self.eff_batch_size = eff_batch_size
 
+        embed_dim = vit_model.embed_dim
+        in_dim = embed_dim
+
         projector_layers = []
-        for i in range(len(self.projector_dims)):
-            dim = int(self.projector_dims[i])
-            projector_layers.append(nn.LazyLinear(dim))
-            projector_layers.append(nn.BatchNorm1d(dim))
+        for out_dim in self.projector_dims:
+            projector_layers.append(nn.LazyLinear(in_dim, out_dim))
+            projector_layers.append(nn.BatchNorm1d(out_dim))
             projector_layers.append(nn.ReLU(inplace=True))
+            in_dim = out_dim
 
         self.projector = nn.Sequential(*projector_layers)
         self.projector_bn = nn.BatchNorm1d(self.projector_dims[-1], affine=False)
