@@ -157,7 +157,7 @@ def run_mae_pretrain(args: Any) -> None:
         mode="pretrain",
         in_dir=args.in_dir,
         batch_size=args.batch_size,
-        target="Age",
+        target=None,
         distributed=args.distributed,
         num_tasks=num_tasks if args.distributed else None,
         global_rank=global_rank if args.distributed else None,
@@ -241,8 +241,8 @@ def run_vit_finetune(args: Any) -> None:
         mode="ssl" if args.mode == "ssl" else "finetune",
         in_dir=args.in_dir,
         batch_size=args.batch_size,
-        label_dict_csv=args.label_dict,
-        target=args.target,
+        label_dict_csv=args.label_dict if args.mode == "finetune" else None,
+        target=args.target if args.mode == "finetune" else None,
         distributed=args.distributed,
         num_tasks=num_tasks if args.distributed else None,
         global_rank=global_rank if args.distributed else None,
@@ -512,7 +512,7 @@ def main() -> None:
     vit_finetune.add_argument(
         "--target",
         type=str,
-        required=True,
+        required=False,
     )
 
     vit_finetune.add_argument(
@@ -531,7 +531,7 @@ def main() -> None:
     vit_finetune.add_argument(
         "--label_dict",
         type=str,
-        required=True,
+        required=False,
     )
 
     vit_finetune.add_argument(

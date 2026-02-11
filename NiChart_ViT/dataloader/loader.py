@@ -173,8 +173,8 @@ def create_dataloaders(
     mode: str,
     in_dir: str,
     batch_size: int,
-    target: str,
     distributed: bool = False,
+    target: Optional[str] = None,
     label_dict_csv: Optional[str] = None,
     num_tasks: Optional[int] = None,
     global_rank: Optional[int] = None,
@@ -198,6 +198,7 @@ def create_dataloaders(
 
     if mode == "finetune":
         assert label_dict_csv is not None
+        assert target is not None
         in_csv = pd.read_csv(label_dict_csv)
         label_dict = {row["MRID"]: row[target] for _, row in in_csv.iterrows()}
 
