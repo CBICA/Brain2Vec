@@ -28,13 +28,6 @@ class VisionTransformer(timm.models.vision_transformer.VisionTransformer):
         img_size = 128 if "img_size" not in kwargs else kwargs["img_size"]
         patch_size = 8 if "patch_size" not in kwargs else kwargs["patch_size"]
         embed_dim = 512 if "embed_dim" not in kwargs else kwargs["embed_dim"]
-        bt_enabled = (
-            True if "barlow_twins" in kwargs and kwargs["barlow_twins"] else False
-        )
-        if bt_enabled:
-            projector_dims = list(map(int, kwargs["projector"].split("-")))
-
-        self.bt_enabled = bt_enabled
 
         self.patch_embed = PatchEmbedding(
             img_size=img_size,
@@ -55,20 +48,6 @@ class VisionTransformer(timm.models.vision_transformer.VisionTransformer):
             self.fc_norm = norm_layer(embed_dim)
 
             del self.norm  # remove the original norm
-
-        if bt_enabled:
-            projector_layers: list = []
-            for i in range(len(projector_dims)):
-                dim = int(projector_layers[i])
-                projector_layers.append(nn.LazyLinear(dim))
-                projector_layers.append(nn.BatchNorm1d(dim))
-                projector_layers.append(nn.ReLU(inplace=True))
-
-            self.projector = nn.Sequential(*projector_layers)
-            self.projector_bn = nn.BatchNorm1d(projector_layers[-1], affine=False)
-
-    def forward_projector(self, x: torch.Tensor) -> torch.Tensor:
-        return self.projector_bn(self.projector(x))
 
     def forward_features(self, x: torch.Tensor, attn_mask: Any = None) -> torch.Tensor:
         B = x.shape[0]
@@ -115,7 +94,7 @@ class BarlowTwins(nn.Module):
 
         projector_layers = []
         for out_dim in self.projector_dims:
-            projector_layers.append(nn.LazyLinear(in_dim, out_dim))
+            projector_layers.append(nn.Linear(in_dim, out_dim))
             projector_layers.append(nn.BatchNorm1d(out_dim))
             projector_layers.append(nn.ReLU(inplace=True))
             in_dim = out_dim
