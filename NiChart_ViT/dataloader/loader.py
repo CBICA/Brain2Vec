@@ -124,7 +124,7 @@ class BarlowTwinsLoader(NiftiLoader):
 
     def __getitem__(self, index: int) -> Any:
 
-        if self.model == "train":
+        if self.mode == "train":
             img_path, _ = self.img_label[index]
         else:
             img_path = self.img_label[index]
@@ -148,6 +148,8 @@ class BarlowTwinsLoader(NiftiLoader):
             ),
             tio.RandomElasticDeformation(num_control_points=7),
             tio.RandomGhosting(num_ghosts=(4, 10)),
+            tio.RandomBiasField(),
+            tio.RandomMotion(),
         ]
 
         idx = np.random_choice(np.arange(len(transforms)), size=4, replace=False)
