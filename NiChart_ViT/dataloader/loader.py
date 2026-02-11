@@ -127,7 +127,7 @@ class BarlowTwinsLoader(NiftiLoader):
         if self.mode == "train":
             img_path, _ = self.img_label[index]
         else:
-            img_path = self.img_label[index]
+            img_path = self.images[index]
 
         img = tio.ScalarImage(img_path)
         resize = tio.Resize((128, 128, 128))
