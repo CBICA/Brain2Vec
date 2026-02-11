@@ -408,14 +408,6 @@ def main() -> None:
     )
 
     mae_train.add_argument(
-        "--lambd",
-        type=float,
-        default=5e-3,
-        required=False,
-        help="Only for ViT SSL with barlow twins. Set's the lambda of barlow twins loss",
-    )
-
-    mae_train.add_argument(
         "--weight_decay",
         type=float,
         default=0.0,
@@ -568,6 +560,14 @@ def main() -> None:
         type=float,
         default=0.01,
         required=False,
+    )
+
+    vit_finetune.add_argument(
+        "--lambd",
+        type=float,
+        default=5e-3,
+        required=False,
+        help="Only for ViT SSL with barlow twins. Set's the lambda of barlow twins loss",
     )
 
     vit_finetune.add_argument(
