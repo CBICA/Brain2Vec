@@ -107,8 +107,8 @@ class BarlowTwins(nn.Module):
         x1: torch.Tensor,
         x2: torch.Tensor,
     ) -> torch.Tensor:
-        z1 = self.projector(self.vit_backbone.forward_encoder(x1))
-        z2 = self.projector(self.vit_backbone.forward_encoder(x2))
+        z1 = self.projector(self.vit_backbone.forward_features(x1))
+        z2 = self.projector(self.vit_backbone.forward_features(x2))
 
         c = self.projector_bn(z1).T @ self.projector_bn(z2)
 
