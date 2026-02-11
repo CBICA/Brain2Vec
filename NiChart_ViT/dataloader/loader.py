@@ -120,8 +120,57 @@ class NiftiLoader(Dataset):
             return img_tensor, mrid
 
 
+class BarlowTwinsLoader(NiftiLoader):
+
+    def __getitem__(self, index: int) -> Any:
+
+        if self.model == "train":
+            img_path, _ = self.img_label[index]
+        else:
+            img_path = self.img_label[index]
+
+        img = tio.ScalarImage(img_path)
+        resize = tio.Resize((128, 128, 128))
+        normalize = tio.ZNormalization(masking_method=None)
+        img = resize(img)
+
+        transforms = [
+            tio.RandomBlur(2),
+            tio.RandomGamma(0.3),
+            tio.RandomFlip(axes=("LR",)),
+            tio.RandomNoise(mean=0, std=2),
+            tio.Affine(
+                scales=(1, 1, 1),
+                degrees=tuple(np.random.uniform(low=-4, high=40, size=3)),
+                translation=tuple(np.random.uniform(low=-10, high=10, size=3)),
+                image_interpolation="linear",
+                default_pad_value="minimum",
+            ),
+            tio.RandomElasticDeformation(num_control_points=7),
+            tio.RandomGhosting(num_ghosts=(4, 10)),
+        ]
+
+        idx = np.random_choice(np.arange(len(transforms)), size=4, replace=False)
+        aug_1, aug_2 = tio.Compose(
+            [transforms[idx[0]], transforms[idx[1]]]
+        ), tio.Compose([transforms[idx[2]], transforms[idx[3]]])
+
+        img_1 = aug_1(img)
+        img_2 = aug_2(img)
+
+        img = normalize(img)
+        img_1 = normalize(img_1)
+        img_2 = normalize(img_2)
+
+        img = torch.tensor(img.data, dtype=torch.float32)
+        img_1 = torch.tensor(img_1.data, dtype=torch.float32)
+        img_2 = torch.tensor(img_2.data, dtype=torch.float32)
+
+        return img, img_1, img_2
+
+
 def create_dataloaders(
-    model: str,
+    mode: str,
     in_dir: str,
     batch_size: int,
     target: str,
@@ -133,7 +182,7 @@ def create_dataloaders(
     """
     Creates the train, test and eval dataloader
 
-    :param model: Either mae or vit
+    :param mode: Either pretrain, finetune or ssl
     :type model: str
     :param in_dir: The input directory that contains train/ test/ and eval/ folders
     :type in_dir: str
@@ -147,38 +196,56 @@ def create_dataloaders(
     test_dir = f"{in_dir}/test"
     eval_dir = f"{in_dir}/eval"
 
-    if model != "mae":
+    if mode == "finetune":
         assert label_dict_csv is not None
         in_csv = pd.read_csv(label_dict_csv)
         label_dict = {row["MRID"]: row[target] for _, row in in_csv.iterrows()}
 
     if os.path.isdir(train_dir):
-        train_loader = NiftiLoader(
-            mode="pretrain" if model == "mae" else "train",
-            in_dir=train_dir,
-            label_dict=None if model == "mae" else label_dict,
-            data_augmentation=True,
-        )
+        if mode == "ssl":
+            train_loader = BarlowTwinsLoader(
+                mode="pretrain",
+                in_dir=train_dir,
+            )
+        else:
+            train_loader = NiftiLoader(
+                mode="pretrain" if mode == "pretrain" else "train",
+                in_dir=train_dir,
+                label_dict=None if mode == "pretrain" else label_dict,
+                data_augmentation=True,
+            )
     else:
         train_loader = None
 
     if os.path.isdir(test_dir):
-        test_loader = NiftiLoader(
-            mode="pretrain" if model == "mae" else "train",
-            in_dir=test_dir,
-            label_dict=None if model == "mae" else label_dict,
-            data_augmentation=False,
-        )
+        if mode == "ssl":
+            test_loader = BarlowTwinsLoader(
+                mode="pretrain",
+                in_dir=test_dir,
+            )
+        else:
+            test_loader = NiftiLoader(
+                mode="pretrain" if mode == "pretrain" else "train",
+                in_dir=test_dir,
+                label_dict=None if mode == "pretrain" else label_dict,
+                data_augmentation=False,
+            )
     else:
         test_loader = None
 
     if os.path.isdir(eval_dir):
-        eval_loader = NiftiLoader(
-            mode="inference",
-            in_dir=eval_dir,
-            label_dict=None if model == "mae" else label_dict,
-            data_augmentation=False,
-        )
+        if mode == "ssl":
+            eval_loader = BarlowTwinsLoader(
+                mode="pretrain",
+                in_dir=eval_dir,
+            )
+        else:
+            eval_loader = NiftiLoader(
+                mode="inference",
+                in_dir=eval_dir,
+                label_dict=None if mode == "pretrain" else label_dict,
+                data_augmentation=False,
+            )
     else:
         eval_loader = None
 

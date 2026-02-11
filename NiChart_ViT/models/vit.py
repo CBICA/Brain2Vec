@@ -16,7 +16,7 @@ import timm.models.vision_transformer
 import torch
 import torch.nn as nn
 
-from NiChart_ViT.models.utils import PatchEmbedding
+from NiChart_ViT.models.utils import PatchEmbedding, off_diagonal
 
 
 class VisionTransformer(timm.models.vision_transformer.VisionTransformer):
@@ -28,6 +28,13 @@ class VisionTransformer(timm.models.vision_transformer.VisionTransformer):
         img_size = 128 if "img_size" not in kwargs else kwargs["img_size"]
         patch_size = 8 if "patch_size" not in kwargs else kwargs["patch_size"]
         embed_dim = 512 if "embed_dim" not in kwargs else kwargs["embed_dim"]
+        bt_enabled = (
+            True if "barlow_twins" in kwargs and kwargs["barlow_twins"] else False
+        )
+        if bt_enabled:
+            projector_dims = list(map(int, kwargs["projector"].split("-")))
+
+        self.bt_enabled = bt_enabled
 
         self.patch_embed = PatchEmbedding(
             img_size=img_size,
@@ -48,6 +55,20 @@ class VisionTransformer(timm.models.vision_transformer.VisionTransformer):
             self.fc_norm = norm_layer(embed_dim)
 
             del self.norm  # remove the original norm
+
+        if bt_enabled:
+            projector_layers: list = []
+            for i in range(len(projector_dims)):
+                dim = int(projector_layers[i])
+                projector_layers.append(nn.LazyLinear(dim))
+                projector_layers.append(nn.BatchNorm1d(dim))
+                projector_layers.append(nn.ReLU(inplace=True))
+
+            self.projector = nn.Sequential(*projector_layers)
+            self.projector_bn = nn.BatchNorm1d(projector_layers[-1], affine=False)
+
+    def forward_projector(self, x: torch.Tensor) -> torch.Tensor:
+        return self.projector_bn(self.projector(x))
 
     def forward_features(self, x: torch.Tensor, attn_mask: Any = None) -> torch.Tensor:
         B = x.shape[0]
@@ -73,6 +94,52 @@ class VisionTransformer(timm.models.vision_transformer.VisionTransformer):
         return outcome
 
 
+class BarlowTwins(nn.Module):
+
+    def __init__(
+        self,
+        vit_model: nn.Module,
+        projector: str,
+        _lambda: float,
+        eff_batch_size: int,
+    ) -> None:
+
+        self.vit_backbone = vit_model
+        self.projector_dims = list(map(int, projector.split("-")))
+        self._lambda = _lambda
+        self.eff_batch_size = eff_batch_size
+
+        projector_layers = []
+        for i in range(len(self.projector_dims)):
+            dim = int(self.projector_dims[i])
+            projector_layers.append(nn.LazyLinear(dim))
+            projector_layers.append(nn.BatchNorm1d(dim))
+            projector_layers.append(nn.ReLU(inplace=True))
+
+        self.projector = nn.Sequential(*projector_layers)
+        self.projector_bn = nn.BatchNorm1d(self.projector_dims[-1], affine=False)
+
+    def forward(
+        self,
+        x1: torch.Tensor,
+        x2: torch.Tensor,
+    ) -> torch.Tensor:
+        z1 = self.projector(self.vit_backbone.forward_encoder(x1))
+        z2 = self.projector(self.vit_backbone.forward_encoder(x2))
+
+        c = self.projector_bn(z1).T @ self.projector_bn(z2)
+
+        c.div_(self.eff_batch_size)
+        if torch.distributed.is_initialized():
+            torch.distributed.all_reduce()
+
+        on_diag = torch.diagonal(c).add_(-1).pow_(2).sum()
+        off_diag = off_diagonal(c).pow_(2).sum()
+        bt_loss = on_diag + self._lambda * off_diag
+
+        return bt_loss
+
+
 def vit_base_patch8(**kwargs: Any) -> nn.Module:
     model = VisionTransformer(
         patch_size=8,
@@ -82,7 +149,7 @@ def vit_base_patch8(**kwargs: Any) -> nn.Module:
         mlp_ratio=4,
         qkv_bias=True,
         norm_layer=partial(nn.LayerNorm, eps=1e-6),
-        **kwargs
+        **kwargs,
     )
     return model
 
@@ -96,7 +163,7 @@ def vit_large_patch8(**kwargs: Any) -> nn.Module:
         mlp_ratio=4,
         qkv_bias=True,
         norm_layer=partial(nn.LayerNorm, eps=1e-6),
-        **kwargs
+        **kwargs,
     )
     return model
 
@@ -110,6 +177,33 @@ def vit_huge_patch8(**kwargs: Any) -> nn.Module:
         mlp_ratio=4,
         qkv_bias=True,
         norm_layer=partial(nn.LayerNorm, eps=1e-6),
-        **kwargs
+        **kwargs,
     )
+    return model
+
+
+def barlow_twins_base(**kwargs: Any) -> nn.Module:
+    model = BarlowTwins(
+        vit_model=vit_base_patch8(img_size=128),
+        **kwargs,
+    )
+
+    return model
+
+
+def barlow_twins_large(**kwargs: Any) -> nn.Module:
+    model = BarlowTwins(
+        vit_model=vit_large_patch8(img_size=128),
+        **kwargs,
+    )
+
+    return model
+
+
+def barlow_twins_huge(**kwargs: Any) -> nn.Module:
+    model = BarlowTwins(
+        vit_model=vit_huge_patch8(img_size=128),
+        **kwargs,
+    )
+
     return model

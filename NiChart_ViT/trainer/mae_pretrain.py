@@ -2,7 +2,9 @@ import torch
 from torch.utils.data import DataLoader
 from tqdm.auto import tqdm
 
-from NiChart_ViT.trainer.utils import EarlyStopper, all_reduce_mean, save_model
+from NiChart_ViT.trainer.utils import EarlyStopper
+from NiChart_ViT.trainer.utils import NativeScalerWithGradNormCount as NativeScaler
+from NiChart_ViT.trainer.utils import all_reduce_mean, save_model
 
 
 def train_step(
@@ -11,14 +13,17 @@ def train_step(
     optimizer: torch.optim.Optimizer,
     masking_type: str,
     mask_ratio: float,
+    loss_scaler: NativeScaler,
+    accum_iter: int,
     device: str,
     distributed: bool = False,
 ) -> float:
     model.train(True)
 
     mse = 0.0
+    num_updates = 0
 
-    for X, _ in dataloader:
+    for data_iter_step, (X, _) in enumerate(dataloader):
         X = X.to(device)
         X = X.float()
 
@@ -31,18 +36,27 @@ def train_step(
                 mask_ratio=mask_ratio,
             )
 
-        loss.backward()
+        loss_value = loss.item()
+        loss /= accum_iter
 
-        optimizer.step()
+        loss_scaler(
+            loss,
+            optimizer,
+            parameters=model.parameters(),
+            update_grad=(data_iter_step + 1) % accum_iter == 0,
+        )
 
-        mse += loss.item()
+        if (data_iter_step + 1) % accum_iter == 0:
+            optimizer.zero_grad()
 
         torch.cuda.synchronize()
 
-    mse /= float(len(dataloader))
-    if distributed:
-        mse = all_reduce_mean(mse)
+        loss_value_reduce = all_reduce_mean(loss_value) if distributed else loss_value
+        if (data_iter_step + 1) % accum_iter == 0:
+            mse += loss_value_reduce
+            num_updates += 1
 
+    mse = mse / max(num_updates, 1)
     return mse
 
 
@@ -90,9 +104,10 @@ def train(
     mask_ratio: float,
     epochs: int,
     patience: int,
+    accum_iter: int,
     device: str,
     target_dir: str = ".",
-    model_name: str = "NiChart_ViTMAE_pretrain.pth",
+    model_name: str = "NiChart_MAEViT_pretrain.pth",
     verbose: bool = False,
 ) -> dict:
     results: dict = {
@@ -106,6 +121,7 @@ def train(
         increase=False,
     )
 
+    loss_scaler = NativeScaler()
     lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=epochs)
 
     for epoch in tqdm(range(epochs)):
@@ -119,6 +135,8 @@ def train(
             optimizer=optimizer,
             masking_type=masking_type,
             mask_ratio=mask_ratio,
+            loss_scaler=loss_scaler,
+            accum_iter=accum_iter,
             device=device,
             distributed=distributed,
         )
