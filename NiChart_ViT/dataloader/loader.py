@@ -33,6 +33,7 @@ class NiftiLoader(Dataset):
         in_dir: str,
         label_dict: Optional[dict] = None,
         data_augmentation: bool = False,
+        **kwargs: Any,
     ) -> None:
         super().__init__()
 
@@ -53,6 +54,7 @@ class NiftiLoader(Dataset):
         self.images: list = []
         self.img_label: list = []
         self.mrids: list = []
+        self.img_size = kwargs.get("img_size", (128, 128, 128))
         self._fetch_images()
         if mode == "train":
             self._fetch_labels()
@@ -81,7 +83,7 @@ class NiftiLoader(Dataset):
             mrid = self.mrids[index]
 
         img = tio.ScalarImage(img_path)
-        resize = tio.Resize((128, 128, 128))
+        resize = tio.Resize(self.img_size)
         img = resize(img)
 
         transforms = []
@@ -130,7 +132,7 @@ class BarlowTwinsLoader(NiftiLoader):
             img_path = self.images[index]
 
         img = tio.ScalarImage(img_path)
-        resize = tio.Resize((128, 128, 128))
+        resize = tio.Resize(self.img_size)
         normalize = tio.ZNormalization(masking_method=None)
         img = resize(img)
 
@@ -180,6 +182,7 @@ def create_dataloaders(
     label_dict_csv: Optional[str] = None,
     num_tasks: Optional[int] = None,
     global_rank: Optional[int] = None,
+    **kwargs: Any,
 ) -> Any:
     """
     Creates the train, test and eval dataloader
@@ -197,6 +200,7 @@ def create_dataloaders(
     train_dir = f"{in_dir}/train"
     test_dir = f"{in_dir}/test"
     eval_dir = f"{in_dir}/eval"
+    img_size = kwargs.get("img_size", (128, 128, 128))
 
     if mode == "finetune":
         assert label_dict_csv is not None
@@ -209,6 +213,7 @@ def create_dataloaders(
             train_loader = BarlowTwinsLoader(
                 mode="pretrain",
                 in_dir=train_dir,
+                img_size=img_size,
             )
         else:
             train_loader = NiftiLoader(
@@ -216,6 +221,7 @@ def create_dataloaders(
                 in_dir=train_dir,
                 label_dict=None if mode == "pretrain" else label_dict,
                 data_augmentation=True,
+                img_size=img_size,
             )
     else:
         train_loader = None
@@ -225,6 +231,7 @@ def create_dataloaders(
             test_loader = BarlowTwinsLoader(
                 mode="pretrain",
                 in_dir=test_dir,
+                img_size=img_size,
             )
         else:
             test_loader = NiftiLoader(
@@ -232,6 +239,7 @@ def create_dataloaders(
                 in_dir=test_dir,
                 label_dict=None if mode == "pretrain" else label_dict,
                 data_augmentation=False,
+                img_size=img_size,
             )
     else:
         test_loader = None
@@ -241,6 +249,7 @@ def create_dataloaders(
             eval_loader = BarlowTwinsLoader(
                 mode="pretrain",
                 in_dir=eval_dir,
+                img_size=img_size,
             )
         else:
             eval_loader = NiftiLoader(
@@ -248,6 +257,7 @@ def create_dataloaders(
                 in_dir=eval_dir,
                 label_dict=None if mode == "pretrain" else label_dict,
                 data_augmentation=False,
+                img_size=img_size,
             )
     else:
         eval_loader = None

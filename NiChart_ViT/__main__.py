@@ -161,6 +161,7 @@ def run_mae_pretrain(args: Any) -> None:
         distributed=args.distributed,
         num_tasks=num_tasks if args.distributed else None,
         global_rank=global_rank if args.distributed else None,
+        img_size=(int(args.img_size),) * 3,
     )
 
     eff_batch_size = args.batch_size * args.world_size
@@ -246,6 +247,7 @@ def run_vit_finetune(args: Any) -> None:
         distributed=args.distributed,
         num_tasks=num_tasks if args.distributed else None,
         global_rank=global_rank if args.distributed else None,
+        img_size=(int(args.img_size),) * 3,
     )
 
     eff_batch_size = args.batch_size * args.world_size * args.accum_iter
@@ -258,7 +260,9 @@ def run_vit_finetune(args: Any) -> None:
 
     if args.distributed:
         model = torch.nn.parallel.DistributedDataParallel(
-            model, device_ids=[args.gpu], find_unused_parameters=True
+            model,
+            device_ids=[args.gpu],
+            find_unused_parameters=True,
         )
         model_without_ddp = model.module
 
