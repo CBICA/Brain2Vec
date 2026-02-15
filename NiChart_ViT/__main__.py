@@ -307,6 +307,10 @@ def run_vit_finetune(args: Any) -> None:
             epochs=args.epochs,
             patience=args.patience,
             accum_iter=args.accum_iter,
+            target_dir=args.out_dir,
+            model_name=args.model_name,
+            device=args.gpu,
+            verbose=args.verbose,
         )
     else:
         _ = vit_finetune(
