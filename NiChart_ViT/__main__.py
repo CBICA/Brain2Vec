@@ -165,7 +165,7 @@ def run_mae_pretrain(args: Any) -> None:
     )
 
     eff_batch_size = args.batch_size * args.world_size
-    eff_lr = args.lr * eff_batch_size / 256
+    eff_lr = args.lr * eff_batch_size / 32
 
     print("Base lr: %.2e" % args.lr, force=True, flush=True)  # type: ignore
     print("Actual lr: %.2e" % eff_lr, force=True, flush=True)  # type: ignore
@@ -251,7 +251,7 @@ def run_vit_finetune(args: Any) -> None:
     )
 
     eff_batch_size = args.batch_size * args.world_size * args.accum_iter
-    eff_lr = args.lr * eff_batch_size / 256
+    eff_lr = args.lr * eff_batch_size / 32
 
     print("Base lr: %.2e" % args.lr, force=True, flush=True)  # type: ignore
     print("Actual lr: %.2e" % eff_lr, force=True, flush=True)  # type: ignore
