@@ -86,13 +86,22 @@ def available_models(
             else vit_huge_patch8(img_size=img_size, num_classes=num_classes).to(device)
         ),
         "bt_base": barlow_twins_base(
-            projector=projector, eff_batch_size=eff_batch_size, _lambda=_lambda
+            projector=projector,
+            eff_batch_size=eff_batch_size,
+            _lambda=_lambda,
+            img_size=img_size,
         ),
         "bt_large": barlow_twins_large(
-            projector=projector, eff_batch_size=eff_batch_size, _lambda=_lambda
+            projector=projector,
+            eff_batch_size=eff_batch_size,
+            _lambda=_lambda,
+            img_size=img_size,
         ),
         "bt_huge": barlow_twins_huge(
-            projector=projector, eff_batch_size=eff_batch_size, _lambda=_lambda
+            projector=projector,
+            eff_batch_size=eff_batch_size,
+            _lambda=_lambda,
+            img_size=img_size,
         ),
     }
 
