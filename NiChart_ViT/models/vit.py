@@ -166,8 +166,9 @@ def vit_huge_patch8(**kwargs: Any) -> nn.Module:
 
 
 def barlow_twins_base(**kwargs: Any) -> nn.Module:
+    img_size = kwargs.get("img_size", 128)
     model = BarlowTwins(
-        vit_model=vit_base_patch8(img_size=128),
+        vit_model=vit_base_patch8(img_size=img_size),
         **kwargs,
     )
 
@@ -175,8 +176,9 @@ def barlow_twins_base(**kwargs: Any) -> nn.Module:
 
 
 def barlow_twins_large(**kwargs: Any) -> nn.Module:
+    img_size = kwargs.get("img_size", 128)
     model = BarlowTwins(
-        vit_model=vit_large_patch8(img_size=128),
+        vit_model=vit_large_patch8(img_size=img_size),
         **kwargs,
     )
 
@@ -184,8 +186,9 @@ def barlow_twins_large(**kwargs: Any) -> nn.Module:
 
 
 def barlow_twins_huge(**kwargs: Any) -> nn.Module:
+    img_size = kwargs.get("img_size", 128)
     model = BarlowTwins(
-        vit_model=vit_huge_patch8(img_size=128),
+        vit_model=vit_huge_patch8(img_size=img_size),
         **kwargs,
     )
 
