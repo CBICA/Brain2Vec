@@ -81,6 +81,7 @@ class BarlowTwins(nn.Module):
         projector: str,
         _lambda: float,
         eff_batch_size: int,
+        **kwargs: Any,
     ) -> None:
 
         super(BarlowTwins, self).__init__()
