@@ -214,6 +214,7 @@ def create_dataloaders(
                 mode="pretrain",
                 in_dir=train_dir,
                 img_size=img_size,
+                drop_last=True,
             )
         else:
             train_loader = NiftiLoader(
@@ -232,6 +233,7 @@ def create_dataloaders(
                 mode="pretrain",
                 in_dir=test_dir,
                 img_size=img_size,
+                drop_last=True,
             )
         else:
             test_loader = NiftiLoader(
@@ -250,6 +252,7 @@ def create_dataloaders(
                 mode="pretrain",
                 in_dir=eval_dir,
                 img_size=img_size,
+                drop_last=True,
             )
         else:
             eval_loader = NiftiLoader(
@@ -297,7 +300,6 @@ def create_dataloaders(
                 test_loader,
                 num_replicas=num_tasks,
                 rank=global_rank,
-                shuffle=True,
             )
             test_dataloader = DataLoader(
                 test_loader,
@@ -323,7 +325,6 @@ def create_dataloaders(
                 eval_loader,
                 num_replicas=num_tasks,
                 rank=global_rank,
-                shuffle=True,
             )
             eval_dataloader = DataLoader(
                 eval_loader,
