@@ -101,7 +101,7 @@ class BarlowTwins(nn.Module):
             in_dim = out_dim
 
         self.projector = nn.Sequential(*projector_layers)
-        self.projector_bn = nn.BatchNorm1d(self.projector_dims[-1], affine=False)
+        self.projector_bn = nn.SyncBatchNorm(self.projector_dims[-1], affine=False)
 
     def forward(
         self,
