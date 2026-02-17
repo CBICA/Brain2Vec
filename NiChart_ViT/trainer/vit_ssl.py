@@ -58,38 +58,6 @@ def train_step(
     return total_loss
 
 
-def test_step(
-    model: torch.nn.Module,
-    dataloader: DataLoader,
-    device: str,
-    distributed: bool,
-) -> float:
-    model.eval()
-
-    test_loss = 0.0
-
-    with torch.no_grad():
-        for X in dataloader:
-            _, x_a, x_b = X
-            x_a, x_b = (
-                x_a.to(device, non_blocking=True),
-                x_b.to(device, non_blocking=True),
-            )
-
-            x_a, x_b = x_a.float(), x_b.float()
-
-            with torch.autocast(device_type="cuda", dtype=torch.bfloat16):
-                loss = model(x_a, x_b)
-
-            test_loss += loss.item()
-
-    test_loss /= float(len(dataloader))
-    if distributed:
-        test_loss = all_reduce_mean(test_loss)
-
-    return test_loss
-
-
 def train(
     model: torch.nn.Module,
     model_without_ddp: torch.nn.Module,
@@ -134,34 +102,32 @@ def train(
             distributed=distributed,
         )
 
-        test_loss = test_step(
-            model=model,
-            dataloader=test_dataloader,
-            device=device,
-            distributed=distributed,
-        )
+        # test_loss = test_step(
+        #     model=model,
+        #     dataloader=test_dataloader,
+        #     device=device,
+        #     distributed=distributed,
+        # )
 
         lr_scheduler.step()
 
-        if test_loss < best_res:
-            best_res = test_loss
+        if train_loss < best_res:
+            best_res = train_loss
             save_model(model_without_ddp, target_dir, model_name)
             if verbose:
                 print(
                     f"[INFO] New best model saved at {target_dir} with test loss: {best_res:.4f}"
                 )
-            if early_stopper.early_stop(test_loss):
+            if early_stopper.early_stop(train_loss):
                 if verbose:
                     print("Early stopping the training")
                 break
 
         if verbose:
             print(
-                f"Epoch: {epoch + 1} | " f"train_loss: {train_loss:.4f} | ",
-                f"test_loss: {test_loss:.4f}",
+                f"Epoch: {epoch + 1} | " f"barlow twins loss: {train_loss:.4f} | ",
             )
 
         results["train_loss"].append(train_loss)
-        results["test_loss"].append(test_loss)
 
     return results
