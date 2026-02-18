@@ -94,14 +94,15 @@ class BarlowTwins(nn.Module):
         in_dim = embed_dim
 
         projector_layers = []
-        for out_dim in self.projector_dims:
-            projector_layers.append(nn.Linear(in_dim, out_dim))
+        for i, out_dim in enumerate(self.projector_dims):
+            projector_layers.append(nn.Linear(in_dim, out_dim, bias=False))
             projector_layers.append(nn.BatchNorm1d(out_dim))
-            projector_layers.append(nn.ReLU(inplace=True))
+            if i != len(self.projector_dims) - 1:  # dont add a final ReLU
+                projector_layers.append(nn.ReLU(inplace=True))
             in_dim = out_dim
 
         self.projector = nn.Sequential(*projector_layers)
-        self.projector_bn = nn.SyncBatchNorm(self.projector_dims[-1], affine=False)
+        self.projector_bn = nn.BatchNorm1d(self.projector_dims[-1], affine=False)
 
     def forward(
         self,
