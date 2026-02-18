@@ -96,8 +96,8 @@ class BarlowTwins(nn.Module):
         projector_layers = []
         for i, out_dim in enumerate(self.projector_dims):
             projector_layers.append(nn.Linear(in_dim, out_dim, bias=False))
-            projector_layers.append(nn.BatchNorm1d(out_dim))
             if i != len(self.projector_dims) - 1:  # dont add a final ReLU
+                projector_layers.append(nn.BatchNorm1d(out_dim))
                 projector_layers.append(nn.ReLU(inplace=True))
             in_dim = out_dim
 
