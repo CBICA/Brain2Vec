@@ -226,9 +226,9 @@ def run_vit_finetune(args: Any) -> None:
 
     init_distributed_mode(args)
 
-    img_size = args.img_size.split('-')
+    img_size = args.img_size.split("-")
     assert len(img_size) == 3
-    img_size = (int(img_size),) * 3
+    img_size = (int(img_size[0]), int(img_size[1]), int(img_size[2]))
 
     avail_models = available_models(
         img_size=img_size,
