@@ -226,8 +226,12 @@ def run_vit_finetune(args: Any) -> None:
 
     init_distributed_mode(args)
 
+    img_size = args.img_size.split('-')
+    assert len(img_size) == 3
+    img_size = (int(img_size),) * 3
+
     avail_models = available_models(
-        img_size=args.img_size,
+        img_size=img_size,
         p_slices=args.p_slices,
         num_classes=1 if args.num_classes == -1 else args.num_classes,
         projector=args.projector if args.mode == "ssl" else None,
@@ -261,7 +265,7 @@ def run_vit_finetune(args: Any) -> None:
         distributed=args.distributed,
         num_tasks=num_tasks if args.distributed else None,
         global_rank=global_rank if args.distributed else None,
-        img_size=(int(args.img_size),) * 3,
+        img_size=img_size,
         p_slices=args.p_slices,
     )
 
