@@ -78,7 +78,9 @@ def available_models(
         "vit_base": (
             vit_base_patch8(img_size=img_size, patch_size=patch_size)
             if num_classes is None
-            else vit_base_patch8(img_size=img_size, patch_size=patch_size, num_classes=num_classes).to(device)
+            else vit_base_patch8(
+                img_size=img_size, patch_size=patch_size, num_classes=num_classes
+            ).to(device)
         ),
         "vit_large": (
             vit_large_patch8(
@@ -86,7 +88,9 @@ def available_models(
                 patch_size=patch_size,
             )
             if num_classes is None
-            else vit_large_patch8(img_size=img_size, patch_size=patch_size, num_classes=num_classes).to(device)
+            else vit_large_patch8(
+                img_size=img_size, patch_size=patch_size, num_classes=num_classes
+            ).to(device)
         ),
         "vit_huge": (
             vit_huge_patch8(
@@ -94,7 +98,9 @@ def available_models(
                 patch_size=patch_size,
             )
             if num_classes is None
-            else vit_huge_patch8(img_size=img_size, patch_size=patch_size, num_classes=num_classes).to(device)
+            else vit_huge_patch8(
+                img_size=img_size, patch_size=patch_size, num_classes=num_classes
+            ).to(device)
         ),
         "bt_base": barlow_twins_base(
             img_size=img_size,
