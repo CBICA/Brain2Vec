@@ -81,12 +81,18 @@ def available_models(
             else vit_base_patch8(img_size=img_size, num_classes=num_classes).to(device)
         ),
         "vit_large": (
-            vit_large_patch8(img_size=img_size, patch_size=patch_size,)
+            vit_large_patch8(
+                img_size=img_size,
+                patch_size=patch_size,
+            )
             if num_classes is None
             else vit_large_patch8(img_size=img_size, num_classes=num_classes).to(device)
         ),
         "vit_huge": (
-            vit_huge_patch8(img_size=img_size, patch_size=patch_size,)
+            vit_huge_patch8(
+                img_size=img_size,
+                patch_size=patch_size,
+            )
             if num_classes is None
             else vit_huge_patch8(img_size=img_size, num_classes=num_classes).to(device)
         ),

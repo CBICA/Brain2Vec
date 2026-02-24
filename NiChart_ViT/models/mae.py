@@ -12,8 +12,8 @@ class MaskedAutoencoderViT(nn.Module):
 
     def __init__(
         self,
-        img_size: int,
-        patch_size: int,
+        img_size: tuple,
+        patch_size: tuple,
         embed_dim: int = 1024,
         depth: int = 24,
         num_heads: int = 16,
@@ -72,7 +72,7 @@ class MaskedAutoencoderViT(nn.Module):
         )
 
         self.decoder_norm = norm_layer(decoder_embed_dim)
-        self.decoder_pred = nn.Linear(decoder_embed_dim, patch_size**3, bias=True)
+        self.decoder_pred = nn.Linear(decoder_embed_dim, patch_size[0]**3, bias=True)
 
         self.norm_pix_loss = norm_pix_loss
         self.initialize_weights()
@@ -370,7 +370,7 @@ class MaskedAutoencoderViT(nn.Module):
 
 def mae_vit_base_patch8_dec512d8b(**kwargs: Any) -> nn.Module:
     model = MaskedAutoencoderViT(
-        patch_size=8,
+        patch_size=(8, 8, 8),
         embed_dim=768,
         depth=12,
         num_heads=12,
@@ -386,7 +386,7 @@ def mae_vit_base_patch8_dec512d8b(**kwargs: Any) -> nn.Module:
 
 def mae_vit_large_patch8_dec512d8b(**kwargs: Any) -> nn.Module:
     model = MaskedAutoencoderViT(
-        patch_size=8,
+        patch_size=(8, 8, 8),
         embed_dim=1056,
         depth=24,
         num_heads=16,
@@ -402,7 +402,7 @@ def mae_vit_large_patch8_dec512d8b(**kwargs: Any) -> nn.Module:
 
 def mae_vit_huge_patch8_dec512d8b(**kwargs: Any) -> nn.Module:
     model = MaskedAutoencoderViT(
-        patch_size=8,
+        patch_size=(8, 8, 8),
         embed_dim=1280,
         depth=32,
         num_heads=16,
