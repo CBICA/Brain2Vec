@@ -60,6 +60,7 @@ class mixup_criterion:
 
 def available_models(
     img_size: tuple = (128, 128, 128),
+    patch_size: tuple = (8, 8, 8),
     p_slices: float = 1.0,
     num_classes: Optional[int] = None,
     projector: Optional[str] = None,
@@ -75,37 +76,40 @@ def available_models(
         "mae_large": mae_vit_large_patch8_dec512d8b(img_size=img_size).to(device),
         "mae_huge": mae_vit_huge_patch8_dec512d8b(img_size=img_size).to(device),
         "vit_base": (
-            vit_base_patch8(img_size=img_size)
+            vit_base_patch8(img_size=img_size, patch_size=patch_size)
             if num_classes is None
             else vit_base_patch8(img_size=img_size, num_classes=num_classes).to(device)
         ),
         "vit_large": (
-            vit_large_patch8(img_size=img_size)
+            vit_large_patch8(img_size=img_size, patch_size=patch_size,)
             if num_classes is None
             else vit_large_patch8(img_size=img_size, num_classes=num_classes).to(device)
         ),
         "vit_huge": (
-            vit_huge_patch8(img_size=img_size)
+            vit_huge_patch8(img_size=img_size, patch_size=patch_size,)
             if num_classes is None
             else vit_huge_patch8(img_size=img_size, num_classes=num_classes).to(device)
         ),
         "bt_base": barlow_twins_base(
+            img_size=img_size,
+            patch_size=patch_size,
             projector=projector,
             eff_batch_size=eff_batch_size,
             _lambda=_lambda,
-            img_size=img_size,
         ),
         "bt_large": barlow_twins_large(
+            img_size=img_size,
+            patch_size=patch_size,
             projector=projector,
             eff_batch_size=eff_batch_size,
             _lambda=_lambda,
-            img_size=img_size,
         ),
         "bt_huge": barlow_twins_huge(
+            img_size=img_size,
+            patch_size=patch_size,
             projector=projector,
             eff_batch_size=eff_batch_size,
             _lambda=_lambda,
-            img_size=img_size,
         ),
     }
 
@@ -230,8 +234,13 @@ def run_vit_finetune(args: Any) -> None:
     assert len(img_size) == 3
     img_size = (int(img_size[0]), int(img_size[1]), int(img_size[2]))
 
+    patch_size = args.patch_size.split("-")
+    assert len(patch_size) == 3
+    patch_size = (int(patch_size[0]), int(patch_size[1]), int(patch_size[2]))
+
     avail_models = available_models(
         img_size=img_size,
+        patch_size=patch_size,
         p_slices=args.p_slices,
         num_classes=1 if args.num_classes == -1 else args.num_classes,
         projector=args.projector if args.mode == "ssl" else None,
@@ -496,6 +505,13 @@ def main() -> None:
         "--img_size",
         type=str,
         default="128-128-128",
+        required=False,
+    )
+
+    vit_finetune.add_argument(
+        "--patch_size",
+        type=str,
+        default="8-8-8",
         required=False,
     )
 
