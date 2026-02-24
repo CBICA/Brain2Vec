@@ -72,13 +72,13 @@ def available_models(
     if p_slices < 1.0:
         img_size = (int(img_size[0] * p_slices), img_size[1], img_size[2])
     return {
-            # "mae_base": mae_vit_base_patch8_dec512d8b(img_size=img_size).to(device),
-            # "mae_large": mae_vit_large_patch8_dec512d8b(img_size=img_size).to(device),
-            # "mae_huge": mae_vit_huge_patch8_dec512d8b(img_size=img_size).to(device),
+        # "mae_base": mae_vit_base_patch8_dec512d8b(img_size=img_size).to(device),
+        # "mae_large": mae_vit_large_patch8_dec512d8b(img_size=img_size).to(device),
+        # "mae_huge": mae_vit_huge_patch8_dec512d8b(img_size=img_size).to(device),
         "vit_base": (
             vit_base_patch8(img_size=img_size, patch_size=patch_size)
             if num_classes is None
-            else vit_base_patch8(img_size=img_size, num_classes=num_classes).to(device)
+            else vit_base_patch8(img_size=img_size, patch_size=patch_size, num_classes=num_classes).to(device)
         ),
         "vit_large": (
             vit_large_patch8(
@@ -86,7 +86,7 @@ def available_models(
                 patch_size=patch_size,
             )
             if num_classes is None
-            else vit_large_patch8(img_size=img_size, num_classes=num_classes).to(device)
+            else vit_large_patch8(img_size=img_size, patch_size=patch_size, num_classes=num_classes).to(device)
         ),
         "vit_huge": (
             vit_huge_patch8(
@@ -94,7 +94,7 @@ def available_models(
                 patch_size=patch_size,
             )
             if num_classes is None
-            else vit_huge_patch8(img_size=img_size, num_classes=num_classes).to(device)
+            else vit_huge_patch8(img_size=img_size, patch_size=patch_size, num_classes=num_classes).to(device)
         ),
         "bt_base": barlow_twins_base(
             img_size=img_size,
