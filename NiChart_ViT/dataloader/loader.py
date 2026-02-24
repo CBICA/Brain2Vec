@@ -33,6 +33,7 @@ class NiftiLoader(Dataset):
         in_dir: str,
         label_dict: Optional[dict] = None,
         data_augmentation: bool = False,
+        p_slices: float = 1.0,
         **kwargs: Any,
     ) -> None:
         super().__init__()
@@ -55,6 +56,7 @@ class NiftiLoader(Dataset):
         self.img_label: list = []
         self.mrids: list = []
         self.img_size = kwargs.get("img_size", (128, 128, 128))
+        self.p_slices = p_slices
         self._fetch_images()
         if mode == "train":
             self._fetch_labels()
@@ -170,6 +172,17 @@ class BarlowTwinsLoader(NiftiLoader):
         img_1 = torch.tensor(img_1.data, dtype=torch.float32)
         img_2 = torch.tensor(img_2.data, dtype=torch.float32)
 
+        if self.p_slices < 1.0:
+            total_slices = img.shape[0]
+            idxs = torch.arange(total_slices, device=img.device).float()
+            slices_keep = torch.multinomial(
+                idxs, num_samples=int(self.p_slices * total_slices)
+            ).to(img.device)
+
+            img = img[slices_keep, :, :]
+            img_1 = img_1[slices_keep, :, :]
+            img_2 = img_2[slices_keep, :, :]
+
         return img, img_1, img_2
 
 
@@ -182,6 +195,7 @@ def create_dataloaders(
     label_dict_csv: Optional[str] = None,
     num_tasks: Optional[int] = None,
     global_rank: Optional[int] = None,
+    p_slices: float = 1.0,
     **kwargs: Any,
 ) -> Any:
     """
@@ -215,6 +229,7 @@ def create_dataloaders(
                 in_dir=train_dir,
                 img_size=img_size,
                 drop_last=True,
+                p_slices=p_slices,
             )
         else:
             train_loader = NiftiLoader(
@@ -234,6 +249,7 @@ def create_dataloaders(
                 in_dir=test_dir,
                 img_size=img_size,
                 drop_last=True,
+                p_slices=p_slices,
             )
         else:
             test_loader = NiftiLoader(
@@ -253,6 +269,7 @@ def create_dataloaders(
                 in_dir=eval_dir,
                 img_size=img_size,
                 drop_last=True,
+                p_slices=p_slices,
             )
         else:
             eval_loader = NiftiLoader(

@@ -25,19 +25,19 @@ class VisionTransformer(timm.models.vision_transformer.VisionTransformer):
     def __init__(self, global_pool: bool = False, **kwargs: Any) -> None:
         super(VisionTransformer, self).__init__(**kwargs)
 
-        img_size = 128 if "img_size" not in kwargs else kwargs["img_size"]
-        patch_size = 8 if "patch_size" not in kwargs else kwargs["patch_size"]
-        embed_dim = 512 if "embed_dim" not in kwargs else kwargs["embed_dim"]
+        self.img_size = kwargs.get("img_size", (128, 128, 128))
+        self.patch_size = kwargs.get("patch_size", (8, 8, 8))
+        self.embed_dim = kwargs.get("embed_dim", 768)
 
         self.patch_embed = PatchEmbedding(
-            img_size=img_size,
-            patch_size=patch_size,
-            num_hidden=embed_dim,
+            img_size=self.img_size,
+            patch_size=self.patch_size,
+            num_hidden=self.embed_dim,
         )
         num_patches = self.patch_embed.num_patches
 
         self.pos_embed = nn.Parameter(
-            torch.zeros(1, num_patches + 1, embed_dim),
+            torch.zeros(1, num_patches + 1, self.embed_dim),
             requires_grad=False,
         )
 
@@ -126,9 +126,14 @@ class BarlowTwins(nn.Module):
 
 
 def vit_base_patch8(**kwargs: Any) -> nn.Module:
+    img_size = kwargs.get("img_size", (128, 128, 128))
+    patch_size = kwargs.get("patch_size", (8, 8, 8))
+    embed_dim = kwargs.get("embed_dim", 768)
+
     model = VisionTransformer(
-        patch_size=8,
-        embed_dim=768,
+        img_size=img_size,
+        patch_size=patch_size,
+        embed_dim=embed_dim,
         depth=12,
         num_heads=12,
         mlp_ratio=4,
@@ -140,9 +145,14 @@ def vit_base_patch8(**kwargs: Any) -> nn.Module:
 
 
 def vit_large_patch8(**kwargs: Any) -> nn.Module:
+    img_size = kwargs.get("img_size", (128, 128, 128))
+    patch_size = kwargs.get("patch_size", (8, 8, 8))
+    embed_dim = kwargs.get("embed_dim", 1024)
+
     model = VisionTransformer(
-        patch_size=8,
-        embed_dim=1024,
+        img_size=img_size,
+        patch_size=patch_size,
+        embed_dim=embed_dim,
         depth=24,
         num_heads=16,
         mlp_ratio=4,
@@ -154,9 +164,14 @@ def vit_large_patch8(**kwargs: Any) -> nn.Module:
 
 
 def vit_huge_patch8(**kwargs: Any) -> nn.Module:
+    img_size = kwargs.get("img_size", (128, 128, 128))
+    patch_size = kwargs.get("patch_size", (8, 8, 8))
+    embed_dim = kwargs.get("embed_dim", 1024)
+
     model = VisionTransformer(
-        patch_size=8,
-        embed_dim=1280,
+        img_size=img_size,
+        patch_size=patch_size,
+        embed_dim=embed_dim,
         depth=32,
         num_heads=16,
         mlp_ratio=4,
@@ -168,9 +183,15 @@ def vit_huge_patch8(**kwargs: Any) -> nn.Module:
 
 
 def barlow_twins_base(**kwargs: Any) -> nn.Module:
-    img_size = kwargs.get("img_size", 128)
+    img_size = kwargs.get("img_size", (128, 128, 128))
+    patch_size = kwargs.get("patch_size", (8, 8, 8))
+
     model = BarlowTwins(
-        vit_model=vit_base_patch8(img_size=img_size),
+        vit_model=vit_base_patch8(
+            img_size=img_size,
+            patch_size=patch_size,
+            embed_dim=768,
+        ),
         **kwargs,
     )
 
@@ -178,9 +199,15 @@ def barlow_twins_base(**kwargs: Any) -> nn.Module:
 
 
 def barlow_twins_large(**kwargs: Any) -> nn.Module:
-    img_size = kwargs.get("img_size", 128)
+    img_size = kwargs.get("img_size", (128, 128, 128))
+    patch_size = kwargs.get("patch_size", (8, 8, 8))
+
     model = BarlowTwins(
-        vit_model=vit_large_patch8(img_size=img_size),
+        vit_model=vit_large_patch8(
+            img_size=img_size,
+            patch_size=patch_size,
+            embed_dim=1024,
+        ),
         **kwargs,
     )
 
@@ -188,9 +215,15 @@ def barlow_twins_large(**kwargs: Any) -> nn.Module:
 
 
 def barlow_twins_huge(**kwargs: Any) -> nn.Module:
-    img_size = kwargs.get("img_size", 128)
+    img_size = kwargs.get("img_size", (128, 128, 128))
+    patch_size = kwargs.get("patch_size", (8, 8, 8))
+
     model = BarlowTwins(
-        vit_model=vit_huge_patch8(img_size=img_size),
+        vit_model=vit_huge_patch8(
+            img_size=img_size,
+            patch_size=patch_size,
+            embed_dim=1280,
+        ),
         **kwargs,
     )
 

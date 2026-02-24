@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 
 
-def off_diagonal(x: torch.Tensor) -> torch.Tensor:
+def off_diagonal(x: torch.tensor) -> torch.tensor:
     # return a flattened view of the off-diagonal elements of a square matrix
     n, m = x.shape
     assert n == m
@@ -13,18 +13,21 @@ def off_diagonal(x: torch.Tensor) -> torch.Tensor:
 class PatchEmbedding(nn.Module):
     def __init__(
         self,
-        img_size: int = 128,
-        patch_size: int = 8,
+        img_size: tuple = (128, 128, 128),
+        patch_size: tuple = (8, 8, 8),
         num_hidden: int = 512,
     ) -> None:
         super().__init__()
 
-        self.img_size, self.patch_size = (img_size, img_size, img_size), (
-            patch_size,
-            patch_size,
-            patch_size,
+        self.img_size = img_size
+        self.patch_size = patch_size
+
+        self.num_patches = (
+            (img_size[0] // patch_size[0])
+            * (img_size[1] // patch_size[1])
+            * (img_size[2] // patch_size[2])
         )
-        self.num_patches = (img_size // patch_size) ** 3
+
         self.conv = nn.Conv3d(1, num_hidden, kernel_size=patch_size, stride=patch_size)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:

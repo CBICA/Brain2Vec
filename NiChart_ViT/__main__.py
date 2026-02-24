@@ -59,13 +59,17 @@ class mixup_criterion:
 
 
 def available_models(
-    img_size: int = 128,
+    img_size: tuple = (128, 128, 128),
+    p_slices: float = 1.0,
     num_classes: Optional[int] = None,
     projector: Optional[str] = None,
     eff_batch_size: Optional[int] = None,
     _lambda: Optional[float] = None,
     device: str = "cuda",
 ) -> dict:
+
+    if p_slices < 1.0:
+        img_size = (int(img_size[0] * p_slices), img_size[1], img_size[2])
     return {
         "mae_base": mae_vit_base_patch8_dec512d8b(img_size=img_size).to(device),
         "mae_large": mae_vit_large_patch8_dec512d8b(img_size=img_size).to(device),
@@ -224,6 +228,7 @@ def run_vit_finetune(args: Any) -> None:
 
     avail_models = available_models(
         img_size=args.img_size,
+        p_slices=args.p_slices,
         num_classes=1 if args.num_classes == -1 else args.num_classes,
         projector=args.projector if args.mode == "ssl" else None,
         eff_batch_size=args.batch_size * args.world_size * args.accum_iter,
@@ -257,6 +262,7 @@ def run_vit_finetune(args: Any) -> None:
         num_tasks=num_tasks if args.distributed else None,
         global_rank=global_rank if args.distributed else None,
         img_size=(int(args.img_size),) * 3,
+        p_slices=args.p_slices,
     )
 
     eff_batch_size = args.batch_size * args.world_size * args.accum_iter
@@ -484,8 +490,15 @@ def main() -> None:
     )
     vit_finetune.add_argument(
         "--img_size",
-        type=int,
-        default=128,
+        type=str,
+        default="128-128-128",
+        required=False,
+    )
+
+    vit_finetune.add_argument(
+        "--p_slices",
+        type=float,
+        default=1.0,
         required=False,
     )
 
@@ -499,7 +512,7 @@ def main() -> None:
     vit_finetune.add_argument(
         "--projector",
         type=str,
-        default="2048-2048-2048",
+        default="1024-2048-4096",
         required=False,
         help="Only if mode==ssl. Provide MLP projector dimensions for Barlow Twins loss",
     )
