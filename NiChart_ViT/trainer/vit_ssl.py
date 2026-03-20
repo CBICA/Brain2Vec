@@ -102,13 +102,6 @@ def train(
             distributed=distributed,
         )
 
-        # test_loss = test_step(
-        #     model=model,
-        #     dataloader=test_dataloader,
-        #     device=device,
-        #     distributed=distributed,
-        # )
-
         lr_scheduler.step()
 
         if train_loss < best_res:
