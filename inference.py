@@ -120,5 +120,5 @@ def vit_inference(
         os.makedirs(output_dir, exist_ok=True)
 
     inference_res.to_csv(out_csv, index=False)
-    print(f"Embeddings saved to {out_json} successfully")
-    print(f"Inference results saved to {out_csv} successfully")
+    print(f"Embeddings saved to {out_json} successfully!")
+    print(f"Inference results saved to {out_csv} successfully!")

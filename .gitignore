@@ -7,9 +7,13 @@
 
 # model weights(will exist on hugging face)
 *.pth
+*.pkl
 
 # .sh jobs for the cluster
 *.sh
+
+# data
+*.json
 
 # images
 *.png
