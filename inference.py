@@ -80,7 +80,6 @@ def vit_inference(
     for _, (imgs, mrids) in enumerate(dataloader):
         imgs = imgs.to(device)
         imgs = imgs.float()
-        imgs.requires_grad_()
 
         with torch.autocast(device_type=device, dtype=torch.bfloat16):
             if out_json:
