@@ -1,4 +1,3 @@
-import pickle
 from typing import Any
 
 import numpy as np
@@ -13,7 +12,6 @@ from sklearn.metrics import (
 )
 from sklearn.model_selection import cross_validate
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import StandardScaler
 
 from NiChart_ViT.models.svm import SVMModel
 
@@ -86,9 +84,7 @@ def train(
 
         if mode == "regression":
             model = SVMModel(mode=mode, C=svc_c, kernel=kernel)
-            pipeline = Pipeline(
-                [("scaler", StandardScaler()), ("svm", model.get_model())]
-            )
+            pipeline = Pipeline([("svm", model.get_model())])
             scoring = ["neg_mean_squared_error", "neg_mean_absolute_error", "r2"]
             scores = cross_validate(pipeline, X_train, y_train, scoring=scoring, cv=5)
 
@@ -103,9 +99,7 @@ def train(
 
         else:
             model = SVMModel(mode=mode, C=svc_c, kernel=kernel)
-            pipeline = Pipeline(
-                [("scaler", StandardScaler()), ("svm", model.get_model())]
-            )
+            pipeline = Pipeline([("svm", model.get_model())])
             auc_scorer = "roc_auc" if mode == "binary" else "roc_auc_ovr"
             scoring = ["f1_macro", auc_scorer, "accuracy"]
             scores = cross_validate(pipeline, X_train, y_train, scoring=scoring, cv=5)
@@ -125,13 +119,6 @@ def train(
     best_trial = study.best_trial
     best_checkpoint = best_trial.user_attrs["checkpoint"]
     best_hyperparams = best_checkpoint["trial_params"]
-
-    scaler = StandardScaler()
-    X_train = scaler.fit_transform(X_train)
-    X_test = scaler.transform(X_test)
-
-    with open("scaler.pkl", "wb") as f:
-        pickle.dump(scaler, f)
 
     if mode == "regression":
         best_model = SVMModel(
