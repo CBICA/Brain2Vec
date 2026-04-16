@@ -114,7 +114,7 @@ def train(
             return float(scores["test_f1_macro"].mean())
 
     study = optuna.create_study(direction="maximize")
-    study.optimize(objective, n_trials=50)
+    study.optimize(objective, n_trials=50, n_jobs=4)
 
     best_trial = study.best_trial
     best_checkpoint = best_trial.user_attrs["checkpoint"]
