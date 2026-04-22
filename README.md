@@ -8,6 +8,7 @@ or perform downstream classification inference using our pre-trained disease
 classification models trained on brain2vec embeddings.
 
 ![brain2vec-example](assets/brain2vec_example.png)
+*Left: Masked input | Middle: Reconstruction (Z-normalized) | Right: Ground truth*
 
 ## Fine-tuning with Brain2Vec
 
