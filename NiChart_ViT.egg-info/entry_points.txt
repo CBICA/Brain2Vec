@@ -1,2 +1,0 @@
-[console_scripts]
-NiChart_ViT = NiChart_ViT.__main__:main

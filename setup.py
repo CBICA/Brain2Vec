@@ -6,17 +6,17 @@ this_directory = Path(__file__).parent
 long_description = (this_directory / "README.md").read_text()
 
 setup(
-    name="NiChart_ViT",
+    name="Brain2Vec",
     version="0.0.1",
-    description="ViT Training for NiChart",
+    description="Implementation of Brain2Vec: Deep Learning Radiomic Features for Neuroimaging Analysis",
     long_description=long_description,
     long_description_content_type="text/markdown",
     author="Spiros Maggioros",
     author_email="software@cbica.upenn.edu",
     maintainer="Spiros Maggioros",
     maintainer_email="Spiros.Maggioros@pennmedicine.upenn.edu",
-    download_url="https://github.com/CBICA/NiChart_ViT/",
-    url="https://github.com/CBICA/NiChart_ViT/",
+    download_url="https://github.com/CBICA/Brain2Vec/",
+    url="https://github.com/CBICA/Brain2Vec/",
     packages=find_packages(exclude=[".github"]),
     python_requires=">=3.9",
     install_requires=[
@@ -28,7 +28,7 @@ setup(
         "numpy",
         "pandas",
     ],
-    entry_points={"console_scripts": ["NiChart_ViT = NiChart_ViT.__main__:main"]},
+    entry_points={"console_scripts": ["Brain2Vec= Brain2Vec.__main__:main"]},
     classifiers=[
         "Intended Audience :: Developers",
         "Intended Audience :: Science/Research",
@@ -38,11 +38,11 @@ setup(
         "Topic :: Scientific/Engineering :: Image Processing",
         "Topic :: Scientific/Engineering :: Medical Science Apps.",
     ],
-    license="By installing/using NiChart_ViT, the user agrees to the following license: See https://www.med.upenn.edu/cbica/software-agreement-non-commercial.html",
+    license="By installing/using Brain2Vec, the user agrees to the following license: See https://www.med.upenn.edu/cbica/software-agreement-non-commercial.html",
     keywords=[
         "deep learning",
-        "semantic segmentation",
+        "foundation model",
         "medical image analysis",
     ],
-    package_data={"NiChart_ViT": ["VERSION"]},
+    package_data={"Brain2Vec": ["VERSION"]},
 )

@@ -1,7 +1,0 @@
-torch
-torchvision
-torchio
-torchmetrics
-tqdm
-numpy
-pandas

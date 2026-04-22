@@ -8,7 +8,7 @@ from timm.models.vision_transformer import Block
 from NiChart_ViT.models.utils import PatchEmbedding, get_3d_sincos_pos_embed
 
 
-class MaskedAutoencoderViT(nn.Module):
+class Brain2Vec(nn.Module):
 
     def __init__(
         self,
@@ -368,8 +368,8 @@ class MaskedAutoencoderViT(nn.Module):
         return loss, pred, mask
 
 
-def mae_vit_base_patch8_dec512d8b(**kwargs: Any) -> nn.Module:
-    model = MaskedAutoencoderViT(
+def brain2vec_base_patch8_dec512d8b(**kwargs: Any) -> nn.Module:
+    model = Brain2Vec(
         patch_size=8,
         embed_dim=768,
         depth=12,
@@ -384,8 +384,8 @@ def mae_vit_base_patch8_dec512d8b(**kwargs: Any) -> nn.Module:
     return model
 
 
-def mae_vit_large_patch8_dec512d8b(**kwargs: Any) -> nn.Module:
-    model = MaskedAutoencoderViT(
+def brain2vec_large_patch8_dec512d8b(**kwargs: Any) -> nn.Module:
+    model = Brain2Vec(
         patch_size=8,
         embed_dim=1056,
         depth=24,
@@ -400,8 +400,8 @@ def mae_vit_large_patch8_dec512d8b(**kwargs: Any) -> nn.Module:
     return model
 
 
-def mae_vit_huge_patch8_dec512d8b(**kwargs: Any) -> nn.Module:
-    model = MaskedAutoencoderViT(
+def brain2vec_huge_patch8_dec512d8b(**kwargs: Any) -> nn.Module:
+    model = Brain2Vec(
         patch_size=8,
         embed_dim=1280,
         depth=32,

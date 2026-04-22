@@ -275,7 +275,7 @@ def train(
     num_classes: Optional[int] = None,
     device: Literal["cuda", "mps", "cpu"] = "cuda",
     target_dir: str = ".",
-    model_name: str = "NiChart_BAScores_best.pth",
+    model_name: str = "vit_best.pth",
     verbose: bool = False,
 ) -> dict:
 

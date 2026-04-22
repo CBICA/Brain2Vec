@@ -26,7 +26,7 @@ def test_dataloader(in_dir: str) -> DataLoader:
 
 
 @torch.no_grad()  # type: ignore
-def mae_inference(
+def brain2vec_inference(
     model: torch.nn.Module,
     model_weights: str,
     in_dir: str,
@@ -47,8 +47,8 @@ def mae_inference(
         imgs.requires_grad_()
 
         with torch.autocast(device_type=device, dtype=torch.bfloat16):
-            features, _, _ = model.forward_encoder(imgs)
-            features = features[:, 0, :]
+            features, _, _ = model.forward_encoder(imgs, mask_ratio=0.0)
+            features = features[:, 0, :].float()
             for i in range(len(mrids)):
                 out_features[mrids[i]] = features[i].cpu().tolist()
 

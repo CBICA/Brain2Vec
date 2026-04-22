@@ -11,28 +11,30 @@ def train_step(
     model: torch.nn.Module,
     dataloader: DataLoader,
     optimizer: torch.optim.Optimizer,
+    masking_type: str,
+    mask_ratio: float,
     loss_scaler: NativeScaler,
     accum_iter: int,
     device: str,
     distributed: bool = False,
 ) -> float:
-    model.train()
+    model.train(True)
 
-    optimizer.zero_grad()
+    mse = 0.0
     num_updates = 0
-    total_loss = 0.0
 
-    for data_iter_step, X in enumerate(dataloader):
-        _, x_a, x_b = X
-        x_a, x_b = (
-            x_a.to(device, non_blocking=True),
-            x_b.to(device, non_blocking=True),
-        )
+    for data_iter_step, (X, _) in enumerate(dataloader):
+        X = X.to(device)
+        X = X.float()
 
-        x_a, x_b = x_a.float(), x_b.float()
+        optimizer.zero_grad()
 
         with torch.autocast(device_type="cuda", dtype=torch.bfloat16):
-            loss = model(x_a, x_b)
+            loss, _, _ = model(
+                X,
+                masking_type=masking_type,
+                mask_ratio=mask_ratio,
+            )
 
         loss_value = loss.item()
         loss /= accum_iter
@@ -51,11 +53,44 @@ def train_step(
 
         loss_value_reduce = all_reduce_mean(loss_value) if distributed else loss_value
         if (data_iter_step + 1) % accum_iter == 0:
-            total_loss += loss_value_reduce
+            mse += loss_value_reduce
             num_updates += 1
 
-    total_loss = total_loss / max(num_updates, 1)
-    return total_loss
+    mse = mse / max(num_updates, 1)
+    return mse
+
+
+def test_step(
+    model: torch.nn.Module,
+    dataloader: DataLoader,
+    masking_type: str,
+    mask_ratio: float,
+    device: str,
+    distributed: bool = False,
+) -> float:
+    model.eval()
+
+    mse = 0.0
+
+    with torch.no_grad():
+        for X, _ in dataloader:
+            X = X.to(device)
+            X = X.float()
+
+            with torch.autocast(device_type="cuda", dtype=torch.bfloat16):
+                loss, _, _ = model(
+                    X,
+                    masking_type=masking_type,
+                    mask_ratio=mask_ratio,
+                )
+
+            mse += loss.item()
+
+    mse /= float(len(dataloader))
+    if distributed:
+        mse = all_reduce_mean(mse)
+
+    return mse
 
 
 def train(
@@ -65,20 +100,22 @@ def train(
     train_dataloader: DataLoader,
     test_dataloader: DataLoader,
     optimizer: torch.optim.Optimizer,
+    masking_type: str,
+    mask_ratio: float,
     epochs: int,
     patience: int,
     accum_iter: int,
-    device: str = "cuda",
+    device: str,
     target_dir: str = ".",
-    model_name: str = "NiChart_BarlowTwins_best.pth",
+    model_name: str = "brain2vec_pretrain.pth",
     verbose: bool = False,
 ) -> dict:
     results: dict = {
-        "train_loss": [],
-        "test_loss": [],
+        "train_mse": [],
+        "test_mse": [],
     }
-
     best_res = float("inf")
+
     early_stopper = EarlyStopper(
         patience=patience,
         increase=False,
@@ -92,35 +129,49 @@ def train(
             train_dataloader.sampler.set_epoch(epoch)
             test_dataloader.sampler.set_epoch(epoch)
 
-        train_loss = train_step(
+        train_mse = train_step(
             model=model,
             dataloader=train_dataloader,
             optimizer=optimizer,
+            masking_type=masking_type,
+            mask_ratio=mask_ratio,
             loss_scaler=loss_scaler,
             accum_iter=accum_iter,
             device=device,
             distributed=distributed,
         )
 
+        test_mse = test_step(
+            model=model,
+            dataloader=test_dataloader,
+            masking_type=masking_type,
+            mask_ratio=mask_ratio,
+            device=device,
+            distributed=distributed,
+        )
+
         lr_scheduler.step()
 
-        if train_loss < best_res:
-            best_res = train_loss
+        if test_mse < best_res:
+            best_res = test_mse
             save_model(model_without_ddp, target_dir, model_name)
             if verbose:
                 print(
-                    f"[INFO] New best model saved at {target_dir} with test loss: {best_res:.4f}"
+                    f"[INFO] New best model saved at {target_dir} with test MSE: {best_res:.4f}",
                 )
-            if early_stopper.early_stop(train_loss):
+            if early_stopper.early_stop(test_mse):
                 if verbose:
                     print("Early stopping the training")
                 break
 
         if verbose:
             print(
-                f"Epoch: {epoch + 1} | " f"barlow twins loss: {train_loss:.4f} | ",
+                f"Epoch: {epoch + 1} | "
+                f"train_mse: {train_mse:.4f} | "
+                f"test_mse: {test_mse:.4f}",
             )
 
-        results["train_loss"].append(train_loss)
+        results["train_mse"].append(train_mse)
+        results["test_mse"].append(test_mse)
 
     return results

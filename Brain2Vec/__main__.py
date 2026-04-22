@@ -8,10 +8,10 @@ from torch import nn
 from torch.distributed import destroy_process_group
 
 from NiChart_ViT.dataloader.loader import create_dataloaders
-from NiChart_ViT.models.mae import (
-    mae_vit_base_patch8_dec512d8b,
-    mae_vit_huge_patch8_dec512d8b,
-    mae_vit_large_patch8_dec512d8b,
+from NiChart_ViT.models.brain2vec import (
+    brain2vec_base_patch8_dec512d8b,
+    brain2vec_huge_patch8_dec512d8b,
+    brain2vec_large_patch8_dec512d8b,
 )
 from NiChart_ViT.models.vit import (
     barlow_twins_base,
@@ -21,7 +21,7 @@ from NiChart_ViT.models.vit import (
     vit_huge_patch8,
     vit_large_patch8,
 )
-from NiChart_ViT.trainer.mae_pretrain import train as mae_pretrain
+from NiChart_ViT.trainer.brain2vec_pretrain import train as brain2vec_pretrain
 from NiChart_ViT.trainer.utils import init_distributed_mode, load_weights
 from NiChart_ViT.trainer.vit_finetune import train as vit_finetune
 from NiChart_ViT.trainer.vit_ssl import train as train_vit_bt
@@ -67,9 +67,11 @@ def available_models(
     device: str = "cuda",
 ) -> dict:
     return {
-        "mae_base": mae_vit_base_patch8_dec512d8b(img_size=img_size).to(device),
-        "mae_large": mae_vit_large_patch8_dec512d8b(img_size=img_size).to(device),
-        "mae_huge": mae_vit_huge_patch8_dec512d8b(img_size=img_size).to(device),
+        "brain2vec_base": brain2vec_base_patch8_dec512d8b(img_size=img_size).to(device),
+        "brain2vec_large": brain2vec_large_patch8_dec512d8b(img_size=img_size).to(
+            device
+        ),
+        "brain2vec_huge": brain2vec_huge_patch8_dec512d8b(img_size=img_size).to(device),
         "vit_base": (
             vit_base_patch8(img_size=img_size)
             if num_classes is None
@@ -138,7 +140,7 @@ def select_optimizer(
     return AVAILABLE_OPTIMIZERS[optimizer]
 
 
-def run_mae_pretrain(args: Any) -> None:
+def run_brain2vec_pretrain(args: Any) -> None:
     assert args.lr > 0.0
     assert args.weight_decay >= 0.0
     assert args.batch_size > 0
@@ -193,7 +195,7 @@ def run_mae_pretrain(args: Any) -> None:
         weight_decay=args.weight_decay,
     )
 
-    _ = mae_pretrain(
+    _ = brain2vec_pretrain(
         model=model,
         model_without_ddp=model_without_ddp,
         distributed=args.distributed,
@@ -350,51 +352,51 @@ def main() -> None:
 
     subparsers = parser.add_subparsers(dest="command", required=True)
 
-    mae_train = subparsers.add_parser(
-        "mae_pretrain", help="Select MAE pretraining mode"
+    brain2vec_train = subparsers.add_parser(
+        "brain2vec_pretrain", help="Select Brain2Vec pre-training mode"
     )
-    mae_train.add_argument(
+    brain2vec_train.add_argument(
         "--img_size",
         type=int,
         default=128,
         required=False,
     )
 
-    mae_train.add_argument(
+    brain2vec_train.add_argument(
         "--masking_type",
         type=str,
         default="random",
         required=False,
     )
 
-    mae_train.add_argument(
+    brain2vec_train.add_argument(
         "--mask_ratio",
         type=float,
         default=0.75,
         required=False,
     )
 
-    mae_train.add_argument(
+    brain2vec_train.add_argument(
         "--model",
         type=str,
-        default="mae_base",
+        default="brain2vec_base",
         required=False,
     )
 
-    mae_train.add_argument(
+    brain2vec_train.add_argument(
         "--in_dir",
         type=str,
         required=True,
     )
 
-    mae_train.add_argument(
+    brain2vec_train.add_argument(
         "--batch_size",
         type=int,
         default=32,
         required=False,
     )
 
-    mae_train.add_argument(
+    brain2vec_train.add_argument(
         "-o",
         "--out_dir",
         type=str,
@@ -402,14 +404,14 @@ def main() -> None:
         required=False,
     )
 
-    mae_train.add_argument(
+    brain2vec_train.add_argument(
         "--model_name",
         type=str,
-        default="NiChart_MAE_ViT_best.pth",
+        default="brain2vec_best.pth",
         required=False,
     )
 
-    mae_train.add_argument(
+    brain2vec_train.add_argument(
         "-d",
         "--device",
         type=str,
@@ -417,70 +419,70 @@ def main() -> None:
         required=False,
     )
 
-    mae_train.add_argument(
+    brain2vec_train.add_argument(
         "--lr",
         type=float,
         default=0.01,
         required=False,
     )
 
-    mae_train.add_argument(
+    brain2vec_train.add_argument(
         "--weight_decay",
         type=float,
         default=0.0,
         required=False,
     )
 
-    mae_train.add_argument(
+    brain2vec_train.add_argument(
         "--epochs",
         type=int,
         default=200,
         required=False,
     )
 
-    mae_train.add_argument(
+    brain2vec_train.add_argument(
         "--patience",
         type=int,
         default=10,
         required=False,
     )
 
-    mae_train.add_argument(
+    brain2vec_train.add_argument(
         "--optimizer",
         type=str,
         default="Adadelta",
         required=False,
     )
 
-    mae_train.add_argument(
+    brain2vec_train.add_argument(
         "--accum_iter",
         type=int,
         default=1,
         required=False,
     )
 
-    mae_train.add_argument(
+    brain2vec_train.add_argument(
         "--verbose",
         action="store_true",
     )
 
-    mae_train.add_argument("--distributed", action="store_true")
+    brain2vec_train.add_argument("--distributed", action="store_true")
 
-    mae_train.add_argument(
+    brain2vec_train.add_argument(
         "--world_size",
         type=int,
         default=1,
         required=False,
     )
 
-    mae_train.add_argument(
+    brain2vec_train.add_argument(
         "--dist_url",
         default="env://",
     )
-    mae_train.set_defaults(func=run_mae_pretrain)
+    brain2vec_train.set_defaults(func=run_brain2vec_pretrain)
 
     vit_finetune = subparsers.add_parser(
-        "vit_finetune", help="Select MAE pretraining mode"
+        "vit_finetune", help="Select ViT fine-tuning mode"
     )
     vit_finetune.add_argument(
         "--img_size",
@@ -561,7 +563,7 @@ def main() -> None:
     vit_finetune.add_argument(
         "--model_name",
         type=str,
-        default="NiChart_ViT_best.pth",
+        default="vit_finetune_best.pth",
     )
 
     vit_finetune.add_argument(
