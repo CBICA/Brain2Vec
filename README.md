@@ -31,7 +31,7 @@ models.
 
 * Vision Transformers implementation follows the code of [timm](https://github.com/huggingface/pytorch-image-models) from huggingface.
 
-* You can use Brain2Vec -- for both feature extraction and disease classification/brain age regression -- on [NiChart](https//:cloud.neuroimagingchart.com).
+* You can use Brain2Vec -- for both feature extraction and disease classification/brain age regression -- on [NiChart](https://cloud.neuroimagingchart.com) by simply dragging and dropping your NIfTI files.
 
 * Before using any of our models localy, make sure that [DLICV](https://github.com/CBICA/DLICV) and linear registration to a common atlas space is applied on your input.
 
