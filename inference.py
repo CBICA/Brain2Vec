@@ -205,7 +205,7 @@ def main() -> None:
         required=False,
         help="Either cuda, cpu or mps. Note that mps do not support some ops",
     )
-    brain2vec_inference.set_defaults(func=brain2vec_inference)
+    brain2vec_inference.set_defaults(func=run_brain2vec_inference)
 
     vit_inference = subparsers.add_parser(
         "vit_inference", help="Select downstream vit inference"
