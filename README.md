@@ -78,3 +78,12 @@ srun Brain2Vec vit_finetune --img_size 128 \
 ## Inference
 
 ### Feature extraction
+
+One other way of using Brain2Vec is for feature extraction. We can use the
+Brain2Vec frozen encoder to produce 768-dimensional embeddings from T1 scans.
+This compact numerical representation serves as input for lightweight downstream
+classifiers, such as SVM or MLP models.
+
+```bash
+python inference.py 
+```

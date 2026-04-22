@@ -2,6 +2,7 @@ from typing import Any
 
 import numpy as np
 import optuna
+from NiChart_ViT.models.svm import SVMModel
 from sklearn.metrics import (
     accuracy_score,
     f1_score,
@@ -12,8 +13,6 @@ from sklearn.metrics import (
 )
 from sklearn.model_selection import cross_validate
 from sklearn.pipeline import Pipeline
-
-from NiChart_ViT.models.svm import SVMModel
 
 
 def compute_metrics(

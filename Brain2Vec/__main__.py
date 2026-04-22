@@ -13,18 +13,10 @@ from Brain2Vec.models.brain2vec import (
     brain2vec_huge_patch8_dec512d8b,
     brain2vec_large_patch8_dec512d8b,
 )
-from Brain2Vec.models.vit import (
-    barlow_twins_base,
-    barlow_twins_huge,
-    barlow_twins_large,
-    vit_base_patch8,
-    vit_huge_patch8,
-    vit_large_patch8,
-)
+from Brain2Vec.models.vit import vit_base_patch8, vit_huge_patch8, vit_large_patch8
 from Brain2Vec.trainer.brain2vec_pretrain import train as brain2vec_pretrain
 from Brain2Vec.trainer.utils import init_distributed_mode, load_weights
 from Brain2Vec.trainer.vit_finetune import train as vit_finetune
-from Brain2Vec.trainer.vit_ssl import train as train_vit_bt
 
 
 class MixUp:
@@ -61,9 +53,6 @@ class mixup_criterion:
 def available_models(
     img_size: int = 128,
     num_classes: Optional[int] = None,
-    projector: Optional[str] = None,
-    eff_batch_size: Optional[int] = None,
-    _lambda: Optional[float] = None,
     device: str = "cuda",
 ) -> dict:
     return {
@@ -86,24 +75,6 @@ def available_models(
             vit_huge_patch8(img_size=img_size)
             if num_classes is None
             else vit_huge_patch8(img_size=img_size, num_classes=num_classes).to(device)
-        ),
-        "bt_base": barlow_twins_base(
-            projector=projector,
-            eff_batch_size=eff_batch_size,
-            _lambda=_lambda,
-            img_size=img_size,
-        ),
-        "bt_large": barlow_twins_large(
-            projector=projector,
-            eff_batch_size=eff_batch_size,
-            _lambda=_lambda,
-            img_size=img_size,
-        ),
-        "bt_huge": barlow_twins_huge(
-            projector=projector,
-            eff_batch_size=eff_batch_size,
-            _lambda=_lambda,
-            img_size=img_size,
         ),
     }
 
@@ -227,9 +198,6 @@ def run_vit_finetune(args: Any) -> None:
     avail_models = available_models(
         img_size=args.img_size,
         num_classes=1 if args.num_classes == -1 else args.num_classes,
-        projector=args.projector if args.mode == "ssl" else None,
-        eff_batch_size=args.batch_size * args.world_size * args.accum_iter,
-        _lambda=args.lambd,
         device=args.device,
     )
     assert args.model in avail_models.keys()
@@ -250,7 +218,7 @@ def run_vit_finetune(args: Any) -> None:
     global_rank = args.rank
 
     train_dataloader, test_dataloader, _ = create_dataloaders(
-        mode="ssl" if args.mode == "ssl" else "finetune",
+        mode="finetune",
         in_dir=args.in_dir,
         batch_size=args.batch_size,
         label_dict_csv=args.label_dict if args.mode == "finetune" else None,
@@ -307,41 +275,24 @@ def run_vit_finetune(args: Any) -> None:
             loss_fn = torch.nn.CrossEntropyLoss()
         else:
             loss_fn = torch.nn.L1Loss(reduction="mean")
-    if args.mode == "ssl":
-        _ = train_vit_bt(
-            model=model,
-            model_without_ddp=model_without_ddp,
-            distributed=args.distributed,
-            train_dataloader=train_dataloader,
-            test_dataloader=test_dataloader,
-            optimizer=optimizer,
-            epochs=args.epochs,
-            patience=args.patience,
-            accum_iter=args.accum_iter,
-            target_dir=args.out_dir,
-            model_name=args.model_name,
-            device=args.gpu,
-            verbose=args.verbose,
-        )
-    else:
-        _ = vit_finetune(
-            model=model,
-            mode=args.mode,
-            model_without_ddp=model_without_ddp,
-            distributed=args.distributed,
-            train_dataloader=train_dataloader,
-            test_dataloader=test_dataloader,
-            optimizer=optimizer,
-            mixup_fn=mixup,
-            loss_fn=loss_fn,
-            epochs=args.epochs,
-            patience=args.patience,
-            num_classes=None if args.num_classes == -1 else args.num_classes,
-            target_dir=args.out_dir,
-            model_name=args.model_name,
-            device=args.gpu,
-            verbose=args.verbose,
-        )
+    _ = vit_finetune(
+        model=model,
+        mode=args.mode,
+        model_without_ddp=model_without_ddp,
+        distributed=args.distributed,
+        train_dataloader=train_dataloader,
+        test_dataloader=test_dataloader,
+        optimizer=optimizer,
+        mixup_fn=mixup,
+        loss_fn=loss_fn,
+        epochs=args.epochs,
+        patience=args.patience,
+        num_classes=None if args.num_classes == -1 else args.num_classes,
+        target_dir=args.out_dir,
+        model_name=args.model_name,
+        device=args.gpu,
+        verbose=args.verbose,
+    )
 
 
 def main() -> None:
@@ -495,15 +446,7 @@ def main() -> None:
         "--mode",
         type=str,
         required=True,
-        help="Either regression, binary, multiclass or ssl",
-    )
-
-    vit_finetune.add_argument(
-        "--projector",
-        type=str,
-        default="2048-2048-2048",
-        required=False,
-        help="Only if mode==ssl. Provide MLP projector dimensions for Barlow Twins loss",
+        help="Either regression, binary or multiclass",
     )
 
     vit_finetune.add_argument(
@@ -579,14 +522,6 @@ def main() -> None:
         type=float,
         default=0.01,
         required=False,
-    )
-
-    vit_finetune.add_argument(
-        "--lambd",
-        type=float,
-        default=5e-3,
-        required=False,
-        help="Only for ViT SSL with barlow twins. Set's the lambda of barlow twins loss",
     )
 
     vit_finetune.add_argument(

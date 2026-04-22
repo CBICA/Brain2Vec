@@ -1,10 +1,9 @@
 import torch
-from torch.utils.data import DataLoader
-from tqdm.auto import tqdm
-
 from NiChart_ViT.trainer.utils import EarlyStopper
 from NiChart_ViT.trainer.utils import NativeScalerWithGradNormCount as NativeScaler
 from NiChart_ViT.trainer.utils import all_reduce_mean, save_model
+from torch.utils.data import DataLoader
+from tqdm.auto import tqdm
 
 
 def train_step(

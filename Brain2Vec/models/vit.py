@@ -16,7 +16,7 @@ import timm.models.vision_transformer
 import torch
 import torch.nn as nn
 
-from Brain2Vec.models.utils import PatchEmbedding, off_diagonal
+from Brain2Vec.models.utils import PatchEmbedding
 
 
 class VisionTransformer(timm.models.vision_transformer.VisionTransformer):
@@ -73,58 +73,6 @@ class VisionTransformer(timm.models.vision_transformer.VisionTransformer):
         return outcome
 
 
-class BarlowTwins(nn.Module):
-
-    def __init__(
-        self,
-        vit_model: nn.Module,
-        projector: str,
-        _lambda: float,
-        eff_batch_size: int,
-        **kwargs: Any,
-    ) -> None:
-
-        super(BarlowTwins, self).__init__()
-        self.vit_backbone = vit_model
-        self.projector_dims = list(map(int, projector.split("-")))
-        self._lambda = _lambda
-        self.eff_batch_size = eff_batch_size
-
-        embed_dim = vit_model.embed_dim
-        in_dim = embed_dim
-
-        projector_layers = []
-        for i, out_dim in enumerate(self.projector_dims):
-            projector_layers.append(nn.Linear(in_dim, out_dim, bias=False))
-            if i != len(self.projector_dims) - 1:  # dont add a final ReLU
-                projector_layers.append(nn.BatchNorm1d(out_dim))
-                projector_layers.append(nn.ReLU(inplace=True))
-            in_dim = out_dim
-
-        self.projector = nn.Sequential(*projector_layers)
-        self.projector_bn = nn.BatchNorm1d(self.projector_dims[-1], affine=False)
-
-    def forward(
-        self,
-        x1: torch.Tensor,
-        x2: torch.Tensor,
-    ) -> torch.Tensor:
-        z1 = self.projector(self.vit_backbone.forward_features(x1))
-        z2 = self.projector(self.vit_backbone.forward_features(x2))
-
-        c = self.projector_bn(z1).T @ self.projector_bn(z2)
-
-        c.div_(self.eff_batch_size)
-        if torch.distributed.is_initialized():
-            torch.distributed.all_reduce(c)
-
-        on_diag = torch.diagonal(c).add_(-1).pow_(2).sum()
-        off_diag = off_diagonal(c).pow_(2).sum()
-        bt_loss = on_diag + self._lambda * off_diag
-
-        return bt_loss
-
-
 def vit_base_patch8(**kwargs: Any) -> nn.Module:
     model = VisionTransformer(
         patch_size=8,
@@ -164,34 +112,4 @@ def vit_huge_patch8(**kwargs: Any) -> nn.Module:
         norm_layer=partial(nn.LayerNorm, eps=1e-6),
         **kwargs,
     )
-    return model
-
-
-def barlow_twins_base(**kwargs: Any) -> nn.Module:
-    img_size = kwargs.get("img_size", 128)
-    model = BarlowTwins(
-        vit_model=vit_base_patch8(img_size=img_size),
-        **kwargs,
-    )
-
-    return model
-
-
-def barlow_twins_large(**kwargs: Any) -> nn.Module:
-    img_size = kwargs.get("img_size", 128)
-    model = BarlowTwins(
-        vit_model=vit_large_patch8(img_size=img_size),
-        **kwargs,
-    )
-
-    return model
-
-
-def barlow_twins_huge(**kwargs: Any) -> nn.Module:
-    img_size = kwargs.get("img_size", 128)
-    model = BarlowTwins(
-        vit_model=vit_huge_patch8(img_size=img_size),
-        **kwargs,
-    )
-
     return model
