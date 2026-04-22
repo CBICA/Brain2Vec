@@ -10,7 +10,7 @@ import torchio as tio
 from torch.utils.data import DataLoader, Dataset
 from typing_extensions import Literal
 
-from NiChart_ViT.dataloader.utils import get_prefix
+from Brain2Vec.dataloader.utils import get_prefix
 
 
 class NiftiLoader(Dataset):

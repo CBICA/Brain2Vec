@@ -7,13 +7,13 @@ from timm.loss.cross_entropy import LabelSmoothingCrossEntropy
 from torch import nn
 from torch.distributed import destroy_process_group
 
-from NiChart_ViT.dataloader.loader import create_dataloaders
-from NiChart_ViT.models.brain2vec import (
+from Brain2Vec.dataloader.loader import create_dataloaders
+from Brain2Vec.models.brain2vec import (
     brain2vec_base_patch8_dec512d8b,
     brain2vec_huge_patch8_dec512d8b,
     brain2vec_large_patch8_dec512d8b,
 )
-from NiChart_ViT.models.vit import (
+from Brain2Vec.models.vit import (
     barlow_twins_base,
     barlow_twins_huge,
     barlow_twins_large,
@@ -21,10 +21,10 @@ from NiChart_ViT.models.vit import (
     vit_huge_patch8,
     vit_large_patch8,
 )
-from NiChart_ViT.trainer.brain2vec_pretrain import train as brain2vec_pretrain
-from NiChart_ViT.trainer.utils import init_distributed_mode, load_weights
-from NiChart_ViT.trainer.vit_finetune import train as vit_finetune
-from NiChart_ViT.trainer.vit_ssl import train as train_vit_bt
+from Brain2Vec.trainer.brain2vec_pretrain import train as brain2vec_pretrain
+from Brain2Vec.trainer.utils import init_distributed_mode, load_weights
+from Brain2Vec.trainer.vit_finetune import train as vit_finetune
+from Brain2Vec.trainer.vit_ssl import train as train_vit_bt
 
 
 class MixUp:

@@ -16,7 +16,7 @@ import timm.models.vision_transformer
 import torch
 import torch.nn as nn
 
-from NiChart_ViT.models.utils import PatchEmbedding, off_diagonal
+from Brain2Vec.models.utils import PatchEmbedding, off_diagonal
 
 
 class VisionTransformer(timm.models.vision_transformer.VisionTransformer):

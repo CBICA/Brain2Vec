@@ -5,7 +5,7 @@ import torch
 import torch.nn as nn
 from timm.models.vision_transformer import Block
 
-from NiChart_ViT.models.utils import PatchEmbedding, get_3d_sincos_pos_embed
+from Brain2Vec.models.utils import PatchEmbedding, get_3d_sincos_pos_embed
 
 
 class Brain2Vec(nn.Module):
