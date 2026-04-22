@@ -271,6 +271,9 @@ def main() -> None:
     )
     vit_inference.set_defaults(func=run_vit_inference)
 
+    args = parser.parse_args()
+    args.func(args)
+
 
 if __name__ == "__main__":
     main()

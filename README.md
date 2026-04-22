@@ -57,11 +57,10 @@ The only thing you need is a csv with MRID and target columns.
 srun Brain2Vec vit_finetune --img_size 128 \
                          --mode binary \ # or binary, multiclass
                          --model vit_base \
-                         --num_classes -1 \ # only for multiclass mode
-                         --target disease \ # target to predict on label dictionary
+                         --label_dict "csv with MRID and target columns" \
+                         --target "target column" \ # target to predict on label dictionary
                          --pretrain weights/NiChart_Brain2Vec_base_patch8_dec512d8b.pth \
                          --in_dir "input_dir/"
-                         --label_dict "csv with MRID and target columns" \
                          --batch_size 32 \
                          --out_dir "output_directory/" \
                          --model_name "model name (.pth)" \
