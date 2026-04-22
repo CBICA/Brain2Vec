@@ -24,7 +24,7 @@ DLMUSE ROI's for brain age regression and on-par accuracy with DL fine-tuned
 models.
 
 ![dx-classification-results](assets/dx_classification_results.png)
-![ba-regression-results](assets/ba_training_results.png)
+![ba-regression-results](assets/ba_regression_results.png)
 
 
 * Brain2Vec implementation follows the code of [Masked Autoencoders](https://github.com/facebookresearch/mae) from Meta.
