@@ -1,4 +1,4 @@
-#Brain2Vec: Deep Learning Radiomic Features for Neuroimaging Analysis
+# Brain2Vec: Deep Learning Radiomic Features for Neuroimaging Analysis
 
 Code for the [Brain2Vec]() paper, a 3D foundation model pre-trained on 74,425
 T1-weighted brain MRI scans. In this repo, you can pre-train your own brain2vec
@@ -7,11 +7,33 @@ encoder, train your own downstream ML models using brain2vec output embeddings
 or perform downstream classification inference using our pre-trained disease
 classification models trained on brain2vec embeddings.
 
+![brain2vec-example](assets/brain2vec_example.png)
+
+## Fine-tuning with Brain2Vec
+
+By fine-tuning with our pre-trained model, we achieved both better accuracy and
+convergence speed
+
+![ba-training-results](assets/ba_training_results.png)
+
+## Using Brain2Vec as a feature extractor
+
+We proved that using Brain2Vec embeddings we get competitive classification
+performance across multiple disease groups as well as better accuracy than
+DLMUSE ROI's for brain age regression and on-par accuracy with DL fine-tuned
+models.
+
+![dx-classification-results](assets/dx_classification_results.png)
+![ba-regression-results](assets/ba_training_results.png)
+
+
 * Brain2Vec implementation follows the code of [Masked Autoencoders](https://github.com/facebookresearch/mae) from Meta.
 
 * Vision Transformers implementation follows the code of [timm](https://github.com/huggingface/pytorch-image-models) from huggingface.
 
-* Before using any of our models, make sure that DLICV() and linear registration to a common atlas space is applied on your input.
+* You can use Brain2Vec -- for both feature extraction and disease classification/brain age regression -- on [NiChart](https//:cloud.neuroimagingchart.com)
+
+* Before using any of our models localy, make sure that [DLICV](https://github.com/CBICA/DLICV) and linear registration to a common atlas space is applied on your input.
 
 ## Installation
 Brain2Vec exists as a PyPI package and can be installed using pip
@@ -71,12 +93,10 @@ srun Brain2Vec vit_finetune --img_size 128 \
                          --epochs 200 \
                          --patience 20 \
                          --distributed \
-                         --verbose \
+                         --verbose
 ```
 
 ## Inference
-
-### Feature extraction
 
 One other way of using Brain2Vec is for feature extraction. We can use the
 Brain2Vec frozen encoder to produce 768-dimensional embeddings from T1 scans.
@@ -84,5 +104,31 @@ This compact numerical representation serves as input for lightweight downstream
 classifiers, such as SVM or MLP models.
 
 ```bash
-python inference.py 
+python inference.py brain2vec_inference --model brain2vec_base \
+                                    --img_size 128 \
+                                    --model_weights "path to model weights (.pth)" \
+                                    --in_dir "path to directory with niftii scans" \
+                                    --out_json "name of json file with output embeddings" \
+                                    --device cuda
+
+python inference.py vit_inference --model vit_base \
+                                --img_size 128 \
+                                --mode regression \
+                                --model_weights "path to model weights (.pth)" \
+                                --in_dir "path to directory with niftii scans" \
+                                --out_csv "name of csv file with predictions" \
+                                --device cuda
+```
+
+## Use Brain2Vec embeddings for downstream tasks
+
+We provide a simple pipeline that enable users to train their own ML models
+using output embeddings from Brain2Vec.
+
+```bash
+python train_svm.py dx_classification --cn_embeddings "path to your CN embeddings" \
+                                      --dx_embeddings "path to your DX embeddings"
+
+python train_svm.py ba_regression --embeddings "path to your embeddings" \
+                                  --label_dict "path to a CSV that contains MRID and Age columns"
 ```
