@@ -4,5 +4,9 @@ torchio
 torchmetrics
 tqdm
 
+scikit-learn
+
+timm
+
 numpy
 pandas

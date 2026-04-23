@@ -7,7 +7,7 @@ long_description = (this_directory / "README.md").read_text()
 
 setup(
     name="Brain2Vec",
-    version="0.0.1",
+    version="1.0.1",
     description="Implementation of Brain2Vec: Deep Learning Radiomic Features for Neuroimaging Analysis",
     long_description=long_description,
     long_description_content_type="text/markdown",
@@ -21,6 +21,7 @@ setup(
     python_requires=">=3.9",
     install_requires=[
         "torch",
+        "timm",
         "torchvision",
         "torchio",
         "torchmetrics",
@@ -28,7 +29,13 @@ setup(
         "numpy",
         "pandas",
     ],
-    entry_points={"console_scripts": ["Brain2Vec= Brain2Vec.__main__:main"]},
+    entry_points={
+        "console_scripts": [
+            "Brain2Vec= Brain2Vec.__main__:main",
+            "inference=inference:main",
+            "svm_train=train_svm:main",
+        ]
+    },
     classifiers=[
         "Intended Audience :: Developers",
         "Intended Audience :: Science/Research",
