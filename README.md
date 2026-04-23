@@ -1,4 +1,4 @@
-# Brain2Vec: Deep Learning Radiomic Features for Neuroimaging Analysis
+# Brain2Vec: A Self-Supervised 3D Foundation Model for Structural Brain MRI
 
 Code for the [Brain2Vec]() paper, a 3D foundation model pre-trained on 74,425
 T1-weighted brain MRI scans. In this repo, you can pre-train your own brain2vec
