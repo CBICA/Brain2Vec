@@ -1,0 +1,25 @@
+# .dockerignore
+.DS_Store
+*.DS_Store
+__pycache__/
+*.pyc
+*.pyo
+.git/
+.gitignore
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+env/
+
+# Large data files — these should be mounted at runtime, not baked in
+*.nii
+*.nii.gz
+*.json
+*.pkl
+*.csv
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb 
