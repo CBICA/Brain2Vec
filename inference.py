@@ -76,7 +76,6 @@ def run_brain2vec_inference(args: Any) -> None:
     for _, (imgs, mrids) in enumerate(dataloader):
         imgs = imgs.to(args.device)
         imgs = imgs.float()
-        imgs.requires_grad_()
 
         with torch.autocast(device_type=args.device):
             features, _, _ = model.forward_encoder(imgs, mask_ratio=0.0)
