@@ -13,7 +13,7 @@ classification models trained on brain2vec embeddings.
 ## Fine-tuning with Brain2Vec
 
 By fine-tuning with our pre-trained model, we achieved both better accuracy and
-convergence speed
+convergence speed on downstream deep learning tasks
 
 ![ba-training-results](assets/ba_training_results.png)
 
@@ -56,7 +56,7 @@ srun Brain2Vec brain2vec_pretrain --img_size 128 \
                          --model brain2vec_base \
                          --in_dir "input_dir/"
                          --batch_size 32 \
-                         --out_dir "output_directory/" \
+                         --out_dir "output_dir/" \
                          --model_name "model name(.pth)" \
                          --device cuda \
                          --lr 0.001 \
@@ -85,7 +85,7 @@ srun Brain2Vec vit_finetune --img_size 128 \
                          --pretrain weights/NiChart_Brain2Vec_base_patch8_dec512d8b.pth \
                          --in_dir "input_dir/"
                          --batch_size 32 \
-                         --out_dir "output_directory/" \
+                         --out_dir "output_dir/" \
                          --model_name "model name (.pth)" \
                          --device cuda \
                          --lr 0.001 \
