@@ -17,7 +17,7 @@ from Brain2Vec.models.vit import vit_base_patch8, vit_huge_patch8, vit_large_pat
 from Brain2Vec.trainer.utils import load_weights
 
 
-def brain2vec_models(img_size: int, device: str) -> dict:
+def brain2vec_models(img_size: int, device: str = "cuda") -> dict:
     return {
         "brain2vec_base": brain2vec_base_patch8_dec512d8b(img_size=img_size).to(device),
         "brain2vec_large": brain2vec_large_patch8_dec512d8b(img_size=img_size).to(
@@ -27,20 +27,22 @@ def brain2vec_models(img_size: int, device: str) -> dict:
     }
 
 
-def vit_models(img_size: int, device: str, num_classes: Optional[int] = None) -> dict:
+def vit_models(
+    img_size: int, num_classes: Optional[int] = None, device: str = "cuda"
+) -> dict:
     return {
         "vit_base": (
-            vit_base_patch8(img_size=img_size)
+            vit_base_patch8(img_size=img_size).to(device)
             if num_classes is None
             else vit_base_patch8(img_size=img_size, num_classes=num_classes).to(device)
         ),
         "vit_large": (
-            vit_large_patch8(img_size=img_size)
+            vit_large_patch8(img_size=img_size).to(device)
             if num_classes is None
             else vit_large_patch8(img_size=img_size, num_classes=num_classes).to(device)
         ),
         "vit_huge": (
-            vit_huge_patch8(img_size=img_size)
+            vit_huge_patch8(img_size=img_size).to(device)
             if num_classes is None
             else vit_huge_patch8(img_size=img_size, num_classes=num_classes).to(device)
         ),
@@ -92,7 +94,7 @@ def run_brain2vec_inference(args: Any) -> None:
 @torch.no_grad()  # type: ignore
 def run_vit_inference(args: Any) -> None:
     num_classes = None if args.num_classes == -1 else args.num_classes
-    model = vit_models(args.img_size, num_classes, args.device)[args.model]  # type: ignore
+    model = vit_models(args.img_size, num_classes, args.device)[args.model]
     load_weights(model, args.model_weights, args.device)
 
     if args.out_json == "":
