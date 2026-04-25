@@ -91,8 +91,8 @@ def run_brain2vec_inference(args: Any) -> None:
 
 @torch.no_grad()  # type: ignore
 def run_vit_inference(args: Any) -> None:
-    num_classes = 1 if args.num_classes == -1 else args.num_classes
-    model = vit_models(args.img_size, num_classes, args.device)[args.model]
+    num_classes = None if args.num_classes == -1 else args.num_classes
+    model = vit_models(args.img_size, num_classes, args.device)[args.model]  # type: ignore
     load_weights(model, args.model_weights, args.device)
 
     if args.out_json == "":
