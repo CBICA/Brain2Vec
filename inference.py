@@ -1,7 +1,7 @@
 import argparse
 import json
 import os
-from typing import Any, Optional
+from typing import Any
 
 import pandas as pd
 import torch
@@ -27,24 +27,16 @@ def brain2vec_models(img_size: int, device: str = "cuda") -> dict:
     }
 
 
-def vit_models(
-    img_size: int, num_classes: Optional[int] = None, device: str = "cuda"
-) -> dict:
+def vit_models(img_size: int, num_classes: int, device: str = "cuda") -> dict:
     return {
         "vit_base": (
-            vit_base_patch8(img_size=img_size).to(device)
-            if num_classes is None
-            else vit_base_patch8(img_size=img_size, num_classes=num_classes).to(device)
+            vit_base_patch8(img_size=img_size, num_classes=num_classes).to(device)
         ),
         "vit_large": (
-            vit_large_patch8(img_size=img_size).to(device)
-            if num_classes is None
-            else vit_large_patch8(img_size=img_size, num_classes=num_classes).to(device)
+            vit_large_patch8(img_size=img_size, num_classes=num_classes).to(device)
         ),
         "vit_huge": (
-            vit_huge_patch8(img_size=img_size).to(device)
-            if num_classes is None
-            else vit_huge_patch8(img_size=img_size, num_classes=num_classes).to(device)
+            vit_huge_patch8(img_size=img_size, num_classes=num_classes).to(device)
         ),
     }
 
@@ -93,8 +85,7 @@ def run_brain2vec_inference(args: Any) -> None:
 
 @torch.no_grad()  # type: ignore
 def run_vit_inference(args: Any) -> None:
-    num_classes = None if args.num_classes == -1 else args.num_classes
-    model = vit_models(args.img_size, num_classes, args.device)[args.model]
+    model = vit_models(args.img_size, int(args.num_classes), args.device)[args.model]
     load_weights(model, args.model_weights, args.device)
 
     if args.out_json == "":
@@ -237,8 +228,8 @@ def main() -> None:
         "--num_classes",
         type=int,
         required=False,
-        default=-1,
-        help="Specify the number of classes for multiclass problems",
+        default=1,
+        help="Specify the number of classes for multiclass problems. Default = 1",
     )
 
     vit_inference.add_argument(
