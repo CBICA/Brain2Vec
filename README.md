@@ -34,7 +34,11 @@ models.
 
 * You can use Brain2Vec -- for both feature extraction and disease classification/brain age regression -- on [NiChart](https://cloud.neuroimagingchart.com) by simply dragging and dropping your NIfTI files.
 
-* Before using any of our models localy, make sure that [DLICV](https://github.com/CBICA/DLICV) and linear registration to a common atlas space is applied on your input.
+* Before using any of our models locally, make sure that the input is
+  skull-stripped and linearly registered to a common atlas space. We use
+  [NiChart\_DLMUSE](https://github.com/CBICA/NiChart_DLMUSE) for skull-stripping
+  and [flirt](https://fsl.fmrib.ox.ac.uk/fsl/docs/registration/flirt/index.html)
+  for registration.
 
 ## Installation
 Brain2Vec exists as a PyPI package and can be installed using pip
