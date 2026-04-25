@@ -218,6 +218,13 @@ def main() -> None:
     )
 
     vit_inference.add_argument(
+        "--img_size",
+        type=int,
+        required=True,
+        help="Image input size. We usually resize to (128, 128, 128) so --img_size=128",
+    )
+
+    vit_inference.add_argument(
         "--mode",
         type=str,
         required=True,
