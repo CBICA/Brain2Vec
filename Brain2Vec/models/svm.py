@@ -1,3 +1,13 @@
+# Copyright 2026 CBICA
+#
+# Author: Spiros Maggioros
+#
+# References:
+#   scikit-learn: https://scikit-learn.org/stable/modules/svm.html
+#
+# Licenced under CBICA's non-Commercial Software Agreement:
+# https://www.med.upenn.edu/cbica/software-agreement-non-commercial.html
+
 import pickle
 from typing import Any, List
 

@@ -1,3 +1,10 @@
+# Copyright 2026 CBICA
+#
+# Author: Spiros Maggioros
+#
+# Licenced under CBICA's non-Commercial Software Agreement:
+# https://www.med.upenn.edu/cbica/software-agreement-non-commercial.html
+
 import torch
 from NiChart_ViT.trainer.utils import EarlyStopper
 from NiChart_ViT.trainer.utils import NativeScalerWithGradNormCount as NativeScaler

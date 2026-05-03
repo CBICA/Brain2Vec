@@ -1,3 +1,16 @@
+# Copyright 2026 CBICA
+#
+# Author: Spiros Maggioros
+#
+# References:
+#   facebookresearch: https://github.com/facebookresearch/mae/blob/main/models_mae.py
+#   timm: https://github.com/rwightman/pytorch-image-models/tree/master/timm
+#   DeiT: https://github.com/facebookresearch/deit
+#
+# Licenced under CBICA's non-Commercial Software Agreement:
+# https://www.med.upenn.edu/cbica/software-agreement-non-commercial.html
+
+
 from functools import partial
 from typing import Any, Optional, Tuple
 

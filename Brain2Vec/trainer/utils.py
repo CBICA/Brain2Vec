@@ -1,3 +1,14 @@
+# Copyright 2026 CBICA
+#
+# Author: Spiros Maggioros
+#
+# References:
+#   facebookresearch: https://github.com/facebookresearch/mae/blob/main/
+#
+# Licenced under CBICA's non-Commercial Software Agreement:
+# https://www.med.upenn.edu/cbica/software-agreement-non-commercial.html
+
+
 import builtins
 import datetime
 import os

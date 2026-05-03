@@ -1,3 +1,13 @@
+# Copyright 2026 CBICA
+#
+# Author: Spiros Maggioros
+#
+# References:
+#   facebookresearch: https://github.com/facebookresearch/mae/tree/main/util
+#
+# Licenced under CBICA's non-Commercial Software Agreement:
+# https://www.med.upenn.edu/cbica/software-agreement-non-commercial.html
+
 import numpy as np
 import torch
 import torch.nn as nn

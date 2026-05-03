@@ -1,13 +1,13 @@
-# Copyright (c) Meta Platforms, Inc. and affiliates.
-# All rights reserved.
-
-# This source code is licensed under the license found in the
-# LICENSE file in the root directory of this source tree.
-# --------------------------------------------------------
+# Copyright 2026 CBICA
+#
+# Author: Spiros Maggioros
+#
 # References:
-# timm: https://github.com/rwightman/pytorch-image-models/tree/master/timm
-# DeiT: https://github.com/facebookresearch/deit
-# --------------------------------------------------------
+#   timm: https://github.com/huggingface/pytorch-image-models/blob/main/timm/models/vision_transformer.py
+#
+# Licenced under CBICA's non-Commercial Software Agreement:
+# https://www.med.upenn.edu/cbica/software-agreement-non-commercial.html
+
 
 from functools import partial
 from typing import Any
