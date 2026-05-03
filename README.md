@@ -38,7 +38,8 @@ models.
   skull-stripped and linearly registered to a common atlas space. We use
   [NiChart\_DLMUSE](https://github.com/CBICA/NiChart_DLMUSE) for skull-stripping
   and [flirt](https://fsl.fmrib.ox.ac.uk/fsl/docs/registration/flirt/index.html)
-  for registration.
+  for registration. Also, make sure that your scan's suffix is **_T1_LPS_DLICV_aligned.nii.gz**
+  in order for our dataloader to work.
 
 ## Installation
 Brain2Vec exists as a PyPI package and can be installed using pip
