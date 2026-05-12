@@ -14,7 +14,9 @@ from sklearn.metrics import (
     f1_score,
     mean_absolute_error,
     mean_squared_error,
+    precision_score,
     r2_score,
+    recall_score,
     roc_auc_score,
 )
 from sklearn.model_selection import cross_validate
@@ -61,6 +63,8 @@ def compute_metrics(
         "F1": f1_score(y_hat_np, y_preds_np, average="macro"),
         "Accuracy": accuracy_score(y_hat_np, y_preds_np),
         "AUC": auc,
+        "Recall": recall_score(y_hat_np, y_preds_np),
+        "Precision": precision_score(y_hat_np, y_preds_np),
     }
 
 
@@ -108,7 +112,7 @@ def train(
             model = SVMModel(mode=mode, C=svc_c, kernel=kernel)
             pipeline = Pipeline([("svm", model.get_model())])
             auc_scorer = "roc_auc" if mode == "binary" else "roc_auc_ovr"
-            scoring = ["f1_macro", auc_scorer, "accuracy"]
+            scoring = ["f1_macro", auc_scorer, "accuracy", "recall", "precision"]
             scores = cross_validate(pipeline, X_train, y_train, scoring=scoring, cv=5)
 
             checkpoint = {
@@ -116,6 +120,8 @@ def train(
                 "f1_score": scores["test_f1_macro"].mean(),
                 "AUC": scores[f"test_{auc_scorer}"].mean(),
                 "Accuracy": scores["test_accuracy"].mean(),
+                "Recall": scores["test_recall"].mean(),
+                "Precision": scores["test_precision"].mean(),
             }
             trial.set_user_attr("checkpoint", checkpoint)
             return float(scores["test_f1_macro"].mean())
@@ -127,24 +133,17 @@ def train(
     best_checkpoint = best_trial.user_attrs["checkpoint"]
     best_hyperparams = best_checkpoint["trial_params"]
 
-    if mode == "regression":
-        best_model = SVMModel(
-            mode=mode,
-            C=best_hyperparams["C"],
-            kernel=best_hyperparams["kernel"],
-        )
-        best_model.fit(X_train, y_train)
-        y_preds = best_model.predict(X_test)
-        stats = compute_metrics(y_preds=y_preds, y_hat=y_test, mode=mode)
+    best_model = SVMModel(
+        mode=mode,
+        C=best_hyperparams["C"],
+        kernel=best_hyperparams["kernel"],
+    )
+    best_model.fit(X_train, y_train)
+    y_preds = best_model.predict(X_test)
 
+    if mode == "regression":
+        stats = compute_metrics(y_preds=y_preds, y_hat=y_test, mode=mode)
     else:
-        best_model = SVMModel(
-            mode=mode,
-            C=best_hyperparams["C"],
-            kernel=best_hyperparams["kernel"],
-        )
-        best_model.fit(X_train, y_train)
-        y_preds = best_model.predict(X_test)
         y_preds_proba = best_model.predict_proba(X_test)
         stats = compute_metrics(
             y_preds=y_preds, y_hat=y_test, mode=mode, y_preds_proba=y_preds_proba
