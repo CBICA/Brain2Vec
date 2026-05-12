@@ -65,6 +65,7 @@ def test_dataloader(in_dir: str) -> DataLoader:
 
 @torch.no_grad()  # type: ignore
 def run_brain2vec_inference(args: Any) -> None:
+    torch.manual_seed(42)
     model = brain2vec_models(args.img_size, args.device)[args.model]
     load_weights(model, args.model_weights, args.device)
 
@@ -92,6 +93,7 @@ def run_brain2vec_inference(args: Any) -> None:
 
 @torch.no_grad()  # type: ignore
 def run_vit_inference(args: Any) -> None:
+    torch.manual_seed(42)
     model = vit_models(args.img_size, int(args.num_classes), args.device)[args.model]
     load_weights(model, args.model_weights, args.device)
 
