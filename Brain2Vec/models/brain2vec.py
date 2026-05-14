@@ -22,6 +22,27 @@ from Brain2Vec.models.utils import PatchEmbedding, get_3d_sincos_pos_embed
 
 
 class Brain2Vec(nn.Module):
+    """
+    Brain2Vec class implementation
+
+    :param img_size: Size of 3D input, most of the times = 128
+    :type img_size: int
+    :param patch_size: Patch size for the vision transformers, we suggest = 8 for img_size = 128
+    :type patch_size: int
+    :param embed_dim: Size of the encoder's output embeddings
+    :type embed_dim: int
+    :param depth: Number of ViT blocks for the encoder
+    :type depth: int,
+    :param decoder_embed_dim: Size of the decoder's output embeddings
+    :type decoder_embed_dim: int
+    :param decoder_depth: Number of ViT blocks for the decoder
+    :type decoder_depth: int
+    :param mlp_ratio: Expansion of output embeddings (e.g. for mlp_ratio = 4.0, from 768 -> 4.0 * 768)
+    :type mlp_ratio: float
+    :param norm_layer: The type of normalization layer, we suggest nn.LayerNorm
+    :type norm_layer: nn.
+    :param norm_pix_loss: Set to true if you only care about representation learning and not voxel-perfect reconstruction
+    """
 
     def __init__(
         self,
