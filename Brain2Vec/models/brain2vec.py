@@ -32,7 +32,7 @@ class Brain2Vec(nn.Module):
     :param embed_dim: Size of the encoder's output embeddings
     :type embed_dim: int
     :param depth: Number of ViT blocks for the encoder
-    :type depth: int,
+    :type depth: int
     :param decoder_embed_dim: Size of the decoder's output embeddings
     :type decoder_embed_dim: int
     :param decoder_depth: Number of ViT blocks for the decoder
@@ -42,6 +42,7 @@ class Brain2Vec(nn.Module):
     :param norm_layer: The type of normalization layer, we suggest nn.LayerNorm
     :type norm_layer: nn.
     :param norm_pix_loss: Set to true if you only care about representation learning and not voxel-perfect reconstruction
+    :type norm_pix_loss: bool
     """
 
     def __init__(
