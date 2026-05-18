@@ -350,3 +350,32 @@ def create_dataloaders(
         eval_dataloader = None
 
     return train_dataloader, test_dataloader, eval_dataloader
+
+
+@torch.no_grad()  # type: ignore
+def extract_mean_vox_values(in_dir: str) -> None:
+    single_loader = NiftiLoader(
+        mode="inference",
+        in_dir=in_dir,
+    )
+    dataloader = DataLoader(
+        single_loader,
+        batch_size=1,
+        shuffle=False,
+        num_workers=os.cpu_count() // 2,  # type: ignore
+    )
+
+    _min, _max = [], []
+    for imgs, _ in dataloader:
+        imgs = imgs.to("cpu")
+        imgs = imgs.float()
+
+        _min.append(torch.min(imgs))
+        _max.append(torch.max(imgs))
+
+    print(f"{np.mean(_min)} {np.std(_min)}")
+    print(f"{np.mean(_max)} {np.std(_min)}")
+
+
+if __name__ == "__main__":
+    extract_mean_vox_values(in_dir="../../test_images/")
