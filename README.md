@@ -41,6 +41,16 @@ models.
   for registration. Also, make sure that your scan's suffix is **_T1_LPS_DLICV_aligned.nii.gz**
   in order for our dataloader to work.
 
+If you use our model, make sure to cite our work:
+```
+@Article{Brain2Vec2026,
+  author  = {Spiros Maggioros and Guray Erus and Gareth Harman and George Aidinis},
+  journal = {arXiv:},
+  title   = {Brain2Vec: A Self-Supervised 3D Foundation Model for Structural Brain MRI},
+  year    = {2026},
+}
+```
+
 ## Installation
 Brain2Vec exists as a PyPI package and can be installed using pip
 ```bash
