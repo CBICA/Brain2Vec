@@ -8,7 +8,6 @@
 from typing import Callable, Optional
 
 import torch
-from NiChart_ViT.trainer.utils import EarlyStopper, all_reduce_mean, save_model
 from torch.utils.data import DataLoader
 from torchmetrics import (  # AUROC,
     Accuracy,
@@ -23,6 +22,8 @@ from torchmetrics import (  # AUROC,
 )
 from tqdm.auto import tqdm
 from typing_extensions import Literal
+
+from Brain2Vec.trainer.utils import EarlyStopper, all_reduce_mean, save_model
 
 
 def train_step(

@@ -6,11 +6,12 @@
 # https://www.med.upenn.edu/cbica/software-agreement-non-commercial.html
 
 import torch
-from NiChart_ViT.trainer.utils import EarlyStopper
-from NiChart_ViT.trainer.utils import NativeScalerWithGradNormCount as NativeScaler
-from NiChart_ViT.trainer.utils import all_reduce_mean, save_model
 from torch.utils.data import DataLoader
 from tqdm.auto import tqdm
+
+from Brain2Vec.trainer.utils import EarlyStopper
+from Brain2Vec.trainer.utils import NativeScalerWithGradNormCount as NativeScaler
+from Brain2Vec.trainer.utils import all_reduce_mean, save_model
 
 
 def train_step(

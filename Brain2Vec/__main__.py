@@ -304,7 +304,7 @@ def run_vit_finetune(args: Any) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        prog="NiChart_ViT",
+        prog="Brain2Vec",
         add_help=False,
     )
 
