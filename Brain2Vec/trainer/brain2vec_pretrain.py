@@ -30,11 +30,11 @@ def train_step(
     mse = 0.0
     num_updates = 0
 
+    optimizer.zero_grad()
+
     for data_iter_step, (X, _) in enumerate(dataloader):
         X = X.to(device)
         X = X.float()
-
-        optimizer.zero_grad()
 
         with torch.autocast(device_type="cuda", dtype=torch.bfloat16):
             loss, _, _ = model(
