@@ -17,8 +17,6 @@ import torchio as tio
 from torch.utils.data import DataLoader, Dataset
 from typing_extensions import Literal
 
-from Brain2Vec.dataloader.utils import get_prefix
-
 
 class NiftiLoader(Dataset):
     """
@@ -71,12 +69,12 @@ class NiftiLoader(Dataset):
             if img_name.endswith(".nii.gz"):
                 image_path = self.in_dir / img_name
                 self.images.append(image_path)
-                self.mrids.append(get_prefix(img_name))
+                self.mrids.append(img_name)
 
     def _fetch_labels(self) -> None:
         for img in self.images:
             if self.label_dict is not None:
-                label = self.label_dict.get(get_prefix(img.name), 0)
+                label = self.label_dict.get(img.name, 0)
             self.img_label.append((img, label))
 
     def __len__(self) -> int:

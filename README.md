@@ -36,10 +36,14 @@ models.
 
 * Before using any of our models locally, make sure that the input is
   skull-stripped and linearly registered to a common atlas space. We use
-  [NiChart\_DLMUSE](https://github.com/CBICA/NiChart_DLMUSE) for skull-stripping
+  [NiChart\_DLMUSE](https://github.com/CBICA/NiChart_DLMUSE) for skull-stripping (DLICV folder)
   and [flirt](https://fsl.fmrib.ox.ac.uk/fsl/docs/registration/flirt/index.html)
-  for registration. Also, make sure that your scan's suffix is **_T1_LPS_DLICV_aligned.nii.gz**
-  in order for our dataloader to work.
+  for registration.
+
+  ```bash
+  NiChart_DLMUSE -i {dir with nifti files} -o ... ---refaced_data
+  flirt -i {DLICV aligned output dir} -o ...
+  ```
 
 If you use our model, make sure to cite our work:
 ```
