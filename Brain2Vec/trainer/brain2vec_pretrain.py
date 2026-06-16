@@ -33,7 +33,7 @@ def train_step(
     optimizer.zero_grad()
 
     for data_iter_step, (X, _) in enumerate(dataloader):
-        X = X.to(device)
+        X = X.to(device, non_blocking=True)
         X = X.float()
 
         with torch.autocast(device_type="cuda", dtype=torch.bfloat16):
@@ -81,7 +81,7 @@ def test_step(
 
     with torch.no_grad():
         for X, _ in dataloader:
-            X = X.to(device)
+            X = X.to(device, non_blocking=True)
             X = X.float()
 
             with torch.autocast(device_type="cuda", dtype=torch.bfloat16):

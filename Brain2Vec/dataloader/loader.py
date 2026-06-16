@@ -285,6 +285,9 @@ def create_dataloaders(
                 sampler=train_sampler,
                 batch_size=batch_size,
                 num_workers=os.cpu_count() // 4,  # type: ignore
+                prefetch_factor=2,
+                pin_memory=torch.cuda.is_available(),
+                persistent_workers=True,
             )
         else:
             train_dataloader = DataLoader(
@@ -293,6 +296,9 @@ def create_dataloaders(
                 shuffle=True,
                 num_workers=os.cpu_count() // 4,  # type: ignore
                 collate_fn=lambda x: torch.utils.data.dataloader.default_collate(x),
+                prefetch_factor=2,
+                pin_memory=torch.cuda.is_available(),
+                persistent_workers=True,
             )
     else:
         train_dataloader = None
@@ -311,6 +317,9 @@ def create_dataloaders(
                 sampler=test_sampler,
                 batch_size=batch_size,
                 num_workers=os.cpu_count() // 4,  # type: ignore
+                prefetch_factor=2,
+                pin_memory=torch.cuda.is_available(),
+                persistent_workers=True,
             )
         else:
             test_dataloader = DataLoader(
@@ -318,6 +327,9 @@ def create_dataloaders(
                 batch_size=batch_size,
                 num_workers=os.cpu_count() // 4,  # type: ignore
                 collate_fn=lambda x: torch.utils.data.dataloader.default_collate(x),
+                prefetch_factor=2,
+                pin_memory=torch.cuda.is_available(),
+                persistent_workers=True,
             )
     else:
         test_dataloader = None
@@ -336,6 +348,9 @@ def create_dataloaders(
                 sampler=eval_sampler,
                 batch_size=1,
                 num_workers=os.cpu_count() // 4,  # type: ignore
+                prefetch_factor=2,
+                pin_memory=torch.cuda.is_available(),
+                persistent_workers=True,
             )
         else:
             eval_dataloader = DataLoader(
@@ -343,6 +358,9 @@ def create_dataloaders(
                 batch_size=1,
                 num_workers=os.cpu_count() // 4,  # type: ignore
                 collate_fn=lambda x: torch.utils.data.dataloader.default_collate(x),
+                prefetch_factor=2,
+                pin_memory=torch.cuda.is_available(),
+                persistent_workers=True,
             )
     else:
         eval_dataloader = None
