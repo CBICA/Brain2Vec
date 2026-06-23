@@ -114,7 +114,6 @@ class NiftiLoader(Dataset):
                             default_pad_value="minimum",
                         )
                     )
-        transforms.append(tio.ZNormalization(masking_method=None))
         if len(transforms) > 0:
             single_transforms = tio.Compose(transforms)
             img = single_transforms(img)
