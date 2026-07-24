@@ -66,6 +66,8 @@ def test_dataloader(in_dir: str) -> DataLoader:
 @torch.no_grad()  # type: ignore
 def run_brain2vec_inference(args: Any) -> None:
     torch.manual_seed(42)
+    if args.device == "cuda":
+        torch.cuda.manual_seed(42)
     model = brain2vec_models(args.img_size, args.device)[args.model]
     load_weights(model, args.model_weights, args.device)
 
