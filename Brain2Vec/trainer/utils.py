@@ -150,7 +150,7 @@ def get_world_size() -> int:
 
 def get_rank() -> int:
     if not dist.is_available() or not dist.is_initialized():
-        return 1
+        return 0
 
     return int(dist.get_rank())
 

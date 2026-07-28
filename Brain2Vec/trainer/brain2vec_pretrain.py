@@ -166,10 +166,10 @@ def train(
                 print(
                     f"[INFO] New best model saved at {target_dir} with test MSE: {best_res:.4f}",
                 )
-            if early_stopper.early_stop(test_mse):
-                if verbose:
-                    print("Early stopping the training")
-                break
+        if early_stopper.early_stop(test_mse):
+            if verbose:
+                print("Early stopping the training")
+            break
 
         if verbose:
             print(
