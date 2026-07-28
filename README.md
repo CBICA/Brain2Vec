@@ -27,12 +27,17 @@ models.
 ![dx-classification-results](assets/dx_classification_results.png)
 ![ba-regression-results](assets/ba_regression_results.png)
 
+We also proved that foundation models focus on limited but important set of brain
+regions. Manipulating a subset of important latent features produces monotonic,
+region-specific effects on the reconstructed anatomy.
+
+![cross-region-correlation](assets/region_profile_lines.png)
 
 * Brain2Vec implementation follows the code of [Masked Autoencoders](https://github.com/facebookresearch/mae) from Meta.
 
 * Vision Transformers implementation follows the code of [timm](https://github.com/huggingface/pytorch-image-models) from huggingface.
 
-* You can use Brain2Vec -- for both feature extraction and disease classification/brain age regression -- on [NiChart](https://cloud.neuroimagingchart.com) by simply dragging and dropping your NIfTI files.
+* You can use Brain2Vec -- for both feature extraction and disease classification/brain age regression -- on [NiChart](https://cloud.neuroimagingchart.com) by simply dragging and dropping your NIfTI files. **No GPU or installation required**.
 
 * Before using any of our models locally, make sure that the input is
   skull-stripped and linearly registered to a common atlas space. We use
@@ -42,7 +47,7 @@ models.
 
   ```bash
   NiChart_DLMUSE -i {dir with nifti files} -o ... ---refaced_data
-  flirt -i {DLICV aligned output dir} -o ...
+  flirt -i {DLICV aligned output} -o ...
   ```
 
 If you use our model, make sure to cite our work:
@@ -64,7 +69,7 @@ pip install Brain2Vec
 ## Brain2Vec pre-training
 
 We trained with two A100 GPUs for 500 epochs with a patience of 20 epochs. For
-more training details please read Brain2Vec paper.
+more training details please read the Brain2Vec paper.
 Using our code, you can parallelize your training on SLURM cluster environments.
 Other environments are supported but not tested, so bugs may appear.
 
