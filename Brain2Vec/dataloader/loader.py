@@ -22,7 +22,7 @@ class NiftiLoader(Dataset):
     """
     Class for the SingleSubject Dataloader. Returns the input tensor with it's label(as a torch.tensor)
 
-    :param mode: train, pretrain(for MAE) or inference
+    :param mode: train(for ViT fine-tuning), pretrain(for Brain2Vec) or inference
     :type mode: str
     :param in_dir: The input directory that contains train/ test/ and eval/ folders
     :type in_dir: str
@@ -60,6 +60,20 @@ class NiftiLoader(Dataset):
         self.img_label: list = []
         self.mrids: list = []
         self.img_size = kwargs.get("img_size", (128, 128, 128))
+        self.transforms = [
+            tio.RandomBlur(2),
+            tio.RandomGamma(0.3),
+            tio.RandomFlip(axes=("LR",)),
+            tio.RandomNoise(mean=0, std=2),
+            tio.Affine(
+                scales=(1, 1, 1),
+                degrees=tuple(np.random.uniform(low=-40, high=40, size=3)),
+                translation=tuple(np.random.uniform(low=-10, high=10, size=3)),
+                image_interpolation="linear",
+                default_pad_value="minimum",
+            ),
+        ]
+        self.resize = tio.Resize(self.img_size)
         self._fetch_images()
         if mode == "train":
             self._fetch_labels()
@@ -88,35 +102,16 @@ class NiftiLoader(Dataset):
             mrid = self.mrids[index]
 
         img = tio.ScalarImage(img_path)
-        resize = tio.Resize(self.img_size)
-        img = resize(img)
+        img = self.resize(img)
 
-        transforms = []
         if self.data_augmentation:
-            if self.mode == "train":
-                if random.randint(0, 4) == 1:
-                    transforms.append(tio.RandomBlur(2))
-                if random.randint(0, 4) == 1:
-                    transforms.append(tio.RandomGamma(0.3))
-                if random.randint(0, 4) == 1:
-                    transforms.append(tio.RandomFlip(axes=("LR",)))
-                if random.randint(0, 4) == 1:
-                    transforms.append(tio.RandomNoise(mean=0, std=2))
-                if random.randint(0, 4) == 1:
-                    transforms.append(
-                        tio.Affine(
-                            scales=(1, 1, 1),
-                            degrees=tuple(np.random.uniform(low=-40, high=40, size=3)),
-                            translation=tuple(
-                                np.random.uniform(low=-10, high=10, size=3)
-                            ),
-                            image_interpolation="linear",
-                            default_pad_value="minimum",
-                        )
-                    )
-        if len(transforms) > 0:
-            single_transforms = tio.Compose(transforms)
-            img = single_transforms(img)
+            sample = [random.randint(0, 4) for _ in range(len(self.transforms))]
+            selected_transformations = [
+                self.transforms[i] for (i, _is) in enumerate(sample) if _is == 1
+            ]
+            transforms_total = tio.Compose(selected_transformations)
+            if len(selected_transformations) > 0:
+                img = transforms_total(img)
 
         img_tensor = torch.tensor(img.data, dtype=torch.float32)
 
@@ -124,57 +119,6 @@ class NiftiLoader(Dataset):
             return img_tensor, torch.tensor(label, dtype=torch.float32)
         else:
             return img_tensor, mrid
-
-
-class BarlowTwinsLoader(NiftiLoader):
-
-    def __getitem__(self, index: int) -> Any:
-
-        if self.mode == "train":
-            img_path, _ = self.img_label[index]
-        else:
-            img_path = self.images[index]
-
-        img = tio.ScalarImage(img_path)
-        resize = tio.Resize(self.img_size)
-        normalize = tio.ZNormalization(masking_method=None)
-        img = resize(img)
-
-        transforms = [
-            tio.RandomBlur(2),
-            tio.RandomGamma(0.3),
-            tio.RandomFlip(axes=("LR",)),
-            tio.RandomNoise(mean=0, std=2),
-            tio.Affine(
-                scales=(1, 1, 1),
-                degrees=tuple(np.random.uniform(low=-4, high=40, size=3)),
-                translation=tuple(np.random.uniform(low=-10, high=10, size=3)),
-                image_interpolation="linear",
-                default_pad_value="minimum",
-            ),
-            tio.RandomElasticDeformation(num_control_points=7),
-            tio.RandomGhosting(num_ghosts=(4, 10)),
-            tio.RandomBiasField(),
-            tio.RandomMotion(),
-        ]
-
-        idx = np.random.choice(np.arange(len(transforms)), size=4, replace=False)
-        aug_1, aug_2 = tio.Compose(
-            [transforms[idx[0]], transforms[idx[1]]]
-        ), tio.Compose([transforms[idx[2]], transforms[idx[3]]])
-
-        img_1 = aug_1(img)
-        img_2 = aug_2(img)
-
-        img = normalize(img)
-        img_1 = normalize(img_1)
-        img_2 = normalize(img_2)
-
-        img = torch.tensor(img.data, dtype=torch.float32)
-        img_1 = torch.tensor(img_1.data, dtype=torch.float32)
-        img_2 = torch.tensor(img_2.data, dtype=torch.float32)
-
-        return img, img_1, img_2
 
 
 def create_dataloaders(
@@ -191,7 +135,7 @@ def create_dataloaders(
     """
     Creates the train, test and eval dataloader
 
-    :param mode: Either pretrain, finetune or ssl
+    :param mode: Either train, pretrain or inference
     :type model: str
     :param in_dir: The input directory that contains train/ test/ and eval/ folders
     :type in_dir: str
@@ -213,59 +157,35 @@ def create_dataloaders(
         label_dict = {row["MRID"]: row[target] for _, row in in_csv.iterrows()}
 
     if os.path.isdir(train_dir):
-        if mode == "ssl":
-            train_loader = BarlowTwinsLoader(
-                mode="pretrain",
-                in_dir=train_dir,
-                img_size=img_size,
-                drop_last=True,
-            )
-        else:
-            train_loader = NiftiLoader(
-                mode="pretrain" if mode == "pretrain" else "train",
-                in_dir=train_dir,
-                label_dict=None if mode == "pretrain" else label_dict,
-                data_augmentation=True,
-                img_size=img_size,
-            )
+        train_loader = NiftiLoader(
+            mode="pretrain" if mode == "pretrain" else "train",
+            in_dir=train_dir,
+            label_dict=None if mode == "pretrain" else label_dict,
+            data_augmentation=True,
+            img_size=img_size,
+        )
     else:
         train_loader = None
 
     if os.path.isdir(test_dir):
-        if mode == "ssl":
-            test_loader = BarlowTwinsLoader(
-                mode="pretrain",
-                in_dir=test_dir,
-                img_size=img_size,
-                drop_last=True,
-            )
-        else:
-            test_loader = NiftiLoader(
-                mode="pretrain" if mode == "pretrain" else "train",
-                in_dir=test_dir,
-                label_dict=None if mode == "pretrain" else label_dict,
-                data_augmentation=False,
-                img_size=img_size,
-            )
+        test_loader = NiftiLoader(
+            mode="pretrain" if mode == "pretrain" else "train",
+            in_dir=test_dir,
+            label_dict=None if mode == "pretrain" else label_dict,
+            data_augmentation=False,
+            img_size=img_size,
+        )
     else:
         test_loader = None
 
     if os.path.isdir(eval_dir):
-        if mode == "ssl":
-            eval_loader = BarlowTwinsLoader(
-                mode="pretrain",
-                in_dir=eval_dir,
-                img_size=img_size,
-                drop_last=True,
-            )
-        else:
-            eval_loader = NiftiLoader(
-                mode="inference",
-                in_dir=eval_dir,
-                label_dict=None if mode == "pretrain" else label_dict,
-                data_augmentation=False,
-                img_size=img_size,
-            )
+        eval_loader = NiftiLoader(
+            mode="inference",
+            in_dir=eval_dir,
+            label_dict=None if mode == "pretrain" else label_dict,
+            data_augmentation=False,
+            img_size=img_size,
+        )
     else:
         eval_loader = None
 
