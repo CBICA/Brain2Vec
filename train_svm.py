@@ -152,7 +152,7 @@ def main() -> None:
         "--n_jobs",
         type=int,
         required=False,
-        defualt=4,
+        default=4,
         help="Number of parallel workes for optuna trials",
     )
 
@@ -188,7 +188,7 @@ def main() -> None:
         "--n_jobs",
         type=int,
         required=False,
-        defualt=4,
+        default=4,
         help="Number of parallel workes for optuna trials",
     )
 
