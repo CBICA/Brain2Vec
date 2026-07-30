@@ -52,6 +52,7 @@ def test_dataloader(in_dir: str) -> DataLoader:
     single_loader = NiftiLoader(
         mode="inference",
         in_dir=in_dir,
+        augmentation=False,
     )
     dataloader = DataLoader(
         single_loader,
@@ -144,7 +145,7 @@ def run_vit_inference(args: Any) -> None:
     if args.out_json:
         assert len(out_features) != 0
         with open(args.out_json, "w") as f:
-            json.dump(out_features, f)
+            json.dump(out_features, f, indent=4)
         print(f"Embeddings saved to {args.out_json} successfully!")
 
     output_dir = os.path.dirname(args.out_csv)
