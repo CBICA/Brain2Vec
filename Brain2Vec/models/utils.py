@@ -8,9 +8,15 @@
 # Licenced under CBICA's non-Commercial Software Agreement:
 # https://www.med.upenn.edu/cbica/software-agreement-non-commercial.html
 
+import json
+from pathlib import Path
+from typing import Any, Optional, Type
+
 import numpy as np
 import torch
 import torch.nn as nn
+from huggingface_hub import hf_hub_download
+from safetensors.torch import load_file
 
 
 def off_diagonal(x: torch.Tensor) -> torch.Tensor:
@@ -103,3 +109,70 @@ def get_1d_sincos_pos_embed_from_grid(embed_dim: int, pos: torch.Tensor) -> np.n
 
     emb = np.concatenate([emb_sin, emb_cos], axis=1)  # (M, D)
     return emb
+
+
+def download_file(
+    repo_id: str,
+    filename: str,
+    revision: Optional[str] = None,
+    cache_dir: Optional[str] = None,
+    token: Optional[str] = None,
+) -> Path:
+    path = hf_hub_download(
+        repo_id=repo_id,
+        filename=filename,
+        revision=revision,
+        cache_dir=cache_dir,
+        token=token,
+    )
+    return Path(path)
+
+
+def load_config(
+    repo_id: str,
+    filename: str = "config.json",
+    revision: Optional[str] = None,
+    cache_dir: Optional[str] = None,
+    token: Optional[str] = None,
+) -> Any:
+    try:
+        path = download_file(repo_id, filename, revision, cache_dir, token)
+    except Exception:
+        return {}
+    with open(path) as f:
+        return json.load(f)
+
+
+def load_brain2vec(
+    repo_id: str,
+    model_class: Type[torch.nn.Module],
+    model_kwargs: Optional[dict[str, Any]] = None,
+    weights_filename: str = "brain2vec.safetensors",
+    config_filename: str = "config.json",
+    revision: Optional[str] = None,
+    device: str | torch.device = "cpu",
+    strict: bool = True,
+) -> torch.nn.Module:
+    kwargs = (
+        model_kwargs
+        if model_kwargs is not None
+        else load_config(repo_id, config_filename, revision)
+    )
+
+    model = model_class(**kwargs)
+
+    weights_path = download_file(repo_id, weights_filename, revision)
+    state_dict = load_file(str(weights_path), device=str(device))
+
+    if strict:
+        model.load_state_dict(state_dict)
+    else:
+        missing, unexpected = model.load_state_dict(state_dict, strict=False)
+        if missing:
+            print(f"[load_brain2vec] missing keys: {missing}")
+        if unexpected:
+            print(f"[load_brain2vec] unexpected keys: {unexpected}")
+
+    model.to(device)
+    model.eval()
+    return model
