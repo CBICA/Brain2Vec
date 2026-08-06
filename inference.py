@@ -20,17 +20,16 @@ from Brain2Vec.models.brain2vec import (
     brain2vec_huge_patch8_dec512d8b,
     brain2vec_large_patch8_dec512d8b,
 )
+from Brain2Vec.models.utils import load_brain2vec
 from Brain2Vec.models.vit import vit_base_patch8, vit_huge_patch8, vit_large_patch8
 from Brain2Vec.trainer.utils import load_weights
 
 
-def brain2vec_models(img_size: int, device: str = "cuda") -> dict:
+def brain2vec_models() -> dict:
     return {
-        "brain2vec_base": brain2vec_base_patch8_dec512d8b(img_size=img_size).to(device),
-        "brain2vec_large": brain2vec_large_patch8_dec512d8b(img_size=img_size).to(
-            device
-        ),
-        "brain2vec_huge": brain2vec_huge_patch8_dec512d8b(img_size=img_size).to(device),
+        "brain2vec_base": brain2vec_base_patch8_dec512d8b,
+        "brain2vec_large": brain2vec_large_patch8_dec512d8b,
+        "brain2vec_huge": brain2vec_huge_patch8_dec512d8b,
     }
 
 
@@ -69,15 +68,16 @@ def run_brain2vec_inference(args: Any) -> None:
     torch.manual_seed(42)
     if args.device == "cuda":
         torch.cuda.manual_seed(42)
-    model = brain2vec_models(args.img_size, args.device)[args.model]
-    load_weights(model, args.model_weights, args.device)
+    model = load_brain2vec(
+        repo_id="cbica/Brain2Vec",
+        model_class=brain2vec_models()[args.model],
+        model_kwargs={"img_size": args.img_size},
+        device=args.device,
+    )
 
     dataloader = test_dataloader(args.in_dir)
 
-    model.to(args.device)
-    model.eval()
     out_features = {}
-
     for _, (imgs, mrids) in enumerate(dataloader):
         imgs = imgs.to(args.device)
         imgs = imgs.float()
