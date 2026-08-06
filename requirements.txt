@@ -2,6 +2,8 @@ torch
 torchvision
 torchio
 torchmetrics
+safetensors
+
 tqdm
 
 scikit-learn
@@ -10,3 +12,5 @@ timm
 
 numpy
 pandas
+
+huggingface_hub
