@@ -28,6 +28,9 @@ setup(
         "tqdm",
         "numpy",
         "pandas",
+        "huggingface-hub",
+        "scikit-learn",
+        "safetensors",
     ],
     entry_points={
         "console_scripts": [
