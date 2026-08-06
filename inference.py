@@ -22,7 +22,6 @@ from Brain2Vec.models.brain2vec import (
 )
 from Brain2Vec.models.utils import load_brain2vec
 from Brain2Vec.models.vit import vit_base_patch8, vit_huge_patch8, vit_large_patch8
-from Brain2Vec.trainer.utils import load_weights
 
 
 def brain2vec_models() -> dict:
@@ -33,17 +32,11 @@ def brain2vec_models() -> dict:
     }
 
 
-def vit_models(img_size: int, num_classes: int, device: str = "cuda") -> dict:
+def vit_models() -> dict:
     return {
-        "vit_base": (
-            vit_base_patch8(img_size=img_size, num_classes=num_classes).to(device)
-        ),
-        "vit_large": (
-            vit_large_patch8(img_size=img_size, num_classes=num_classes).to(device)
-        ),
-        "vit_huge": (
-            vit_huge_patch8(img_size=img_size, num_classes=num_classes).to(device)
-        ),
+        "vit_base": vit_base_patch8,
+        "vit_large": vit_large_patch8,
+        "vit_huge": vit_huge_patch8,
     }
 
 
@@ -70,6 +63,7 @@ def run_brain2vec_inference(args: Any) -> None:
         torch.cuda.manual_seed(42)
     model = load_brain2vec(
         repo_id="cbica/Brain2Vec",
+        weights_filename="brain2vec.safetensors",
         model_class=brain2vec_models()[args.model],
         model_kwargs={"img_size": args.img_size},
         device=args.device,
@@ -97,8 +91,13 @@ def run_brain2vec_inference(args: Any) -> None:
 @torch.no_grad()  # type: ignore
 def run_vit_inference(args: Any) -> None:
     torch.manual_seed(42)
-    model = vit_models(args.img_size, int(args.num_classes), args.device)[args.model]
-    load_weights(model, args.model_weights, args.device)
+    model = load_brain2vec(
+        repo_id="cbica/Brain2Vec",
+        weights_filename="vit_ba_finetuned.safetensors",
+        model_class=vit_models()[args.model],
+        model_kwargs={"img_size": args.img_size, "num_classes": int(args.num_classes)},
+        device=args.device,
+    )
 
     if args.out_json == "":
         args.out_json = None
