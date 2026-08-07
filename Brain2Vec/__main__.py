@@ -6,7 +6,7 @@
 # https://www.med.upenn.edu/cbica/software-agreement-non-commercial.html
 
 import argparse
-from typing import Any, Optional, Tuple
+from typing import Any, Tuple
 
 import numpy as np
 import torch
@@ -20,9 +20,10 @@ from Brain2Vec.models.brain2vec import (
     brain2vec_huge_patch8_dec512d8b,
     brain2vec_large_patch8_dec512d8b,
 )
+from Brain2Vec.models.utils import load_brain2vec
 from Brain2Vec.models.vit import vit_base_patch8, vit_huge_patch8, vit_large_patch8
 from Brain2Vec.trainer.brain2vec_pretrain import train as brain2vec_pretrain
-from Brain2Vec.trainer.utils import init_distributed_mode, load_weights
+from Brain2Vec.trainer.utils import init_distributed_mode
 from Brain2Vec.trainer.vit_finetune import train as vit_finetune
 
 
@@ -57,32 +58,14 @@ class mixup_criterion:
         return lam * self.criterion(pred, y_a) + (1 - lam) * self.criterion(pred, y_b)
 
 
-def available_models(
-    img_size: int = 128,
-    num_classes: Optional[int] = None,
-    device: str = "cuda",
-) -> dict:
+def available_models() -> dict:
     return {
-        "brain2vec_base": brain2vec_base_patch8_dec512d8b(img_size=img_size).to(device),
-        "brain2vec_large": brain2vec_large_patch8_dec512d8b(img_size=img_size).to(
-            device
-        ),
-        "brain2vec_huge": brain2vec_huge_patch8_dec512d8b(img_size=img_size).to(device),
-        "vit_base": (
-            vit_base_patch8(img_size=img_size)
-            if num_classes is None
-            else vit_base_patch8(img_size=img_size, num_classes=num_classes).to(device)
-        ),
-        "vit_large": (
-            vit_large_patch8(img_size=img_size)
-            if num_classes is None
-            else vit_large_patch8(img_size=img_size, num_classes=num_classes).to(device)
-        ),
-        "vit_huge": (
-            vit_huge_patch8(img_size=img_size)
-            if num_classes is None
-            else vit_huge_patch8(img_size=img_size, num_classes=num_classes).to(device)
-        ),
+        "brain2vec_base": brain2vec_base_patch8_dec512d8b,
+        "brain2vec_large": brain2vec_large_patch8_dec512d8b,
+        "brain2vec_huge": brain2vec_huge_patch8_dec512d8b,
+        "vit_base": vit_base_patch8,
+        "vit_large": vit_large_patch8,
+        "vit_huge": vit_huge_patch8,
     }
 
 
@@ -126,12 +109,12 @@ def run_brain2vec_pretrain(args: Any) -> None:
     assert args.patience >= 0 and args.patience < args.epochs
     assert args.accum_iter >= 1
 
-    avail_models = available_models(img_size=args.img_size, device=args.device)
+    avail_models = available_models()
     assert args.model in avail_models.keys()
 
     init_distributed_mode(args)
 
-    model = avail_models[args.model]
+    model = avail_models[args.model](img_size=args.img_size).to(args.device)
     if args.distributed:
         torch.cuda.set_device(args.gpu)
         model = model.cuda(args.gpu)
@@ -202,17 +185,27 @@ def run_vit_finetune(args: Any) -> None:
 
     init_distributed_mode(args)
 
-    avail_models = available_models(
-        img_size=args.img_size,
-        num_classes=1 if args.num_classes == -1 else args.num_classes,
-        device=args.device,
-    )
+    avail_models = available_models()
     assert args.model in avail_models.keys()
 
-    model = avail_models[args.model]
+    model_class = avail_models[args.model]
     if len(args.pretrain) > 0:
-        load_weights(model=model, model_weights=args.pretrain, device=args.device)
-    # otherwise just train from scratch
+        model = load_brain2vec(
+            repo_id="cbica/Brain2Vec",
+            model_class=model_class,
+            model_kwargs={
+                "img_size": args.img_size,
+                "num_classes": 1 if args.num_classes == -1 else args.num_classes,
+            },
+            weights_filename=args.pretrain,
+            device=args.device,
+            strict=False,
+        )
+    else:
+        model = model_class(
+            img_size=args.img_size,
+            num_classes=1 if args.num_classes == -1 else args.num_classes,
+        )
 
     if args.distributed:
         torch.cuda.set_device(args.gpu)
