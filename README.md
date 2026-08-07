@@ -47,7 +47,7 @@ region-specific effects on the reconstructed anatomy.
 
   ```bash
   NiChart_DLMUSE -i {dir with nifti files} -o ... ---refaced_data
-  flirt -i {DLICV aligned output} -o ...
+  flirt -i {DLICV aligned output} -ref img_template.nii.gz -o ...
   ```
 
 If you use our model, make sure to cite our work:
@@ -107,7 +107,7 @@ srun Brain2Vec vit_finetune --img_size 128 \
                          --label_dict "csv with MRID and target columns" \
                          --target "target column" \
                          --pretrain "brain2vec.safetensors (model name from our
-                         hugging face" \
+                         hugging face)" \
                          --in_dir "input_dir/"
                          --batch_size 32 \
                          --out_dir "output_dir/" \
