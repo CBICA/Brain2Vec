@@ -1,11 +1,21 @@
 # Brain2Vec: A Self-Supervised 3D Foundation Model for Structural Brain MRI
 
+<div align="center">
+
+[![arXiv](https://img.shields.io/badge/arXiv-XXXX.XXXXX-b31b1b.svg)]()
+[![HuggingFace](https://img.shields.io/badge/🤗%20Hugging%20Face-Model-yellow)](https://huggingface.co/cbica/Brain2Vec)
+
+</div>
+
 Code for the [Brain2Vec]() paper, a 3D foundation model pre-trained on 74,425
 T1-weighted brain MRI scans. In this repo, you can pre-train your own brain2vec
 model, fine-tune a Vision Transformer (ViT) using our pre-trained brain2vec
 encoder, train your own downstream ML models using brain2vec output embeddings
 or perform downstream classification inference using our pre-trained disease
 classification models trained on brain2vec embeddings.
+
+> [!IMPORTANT]
+> To use our model, you need to apply for access to our [hugging face model card](https://huggingface.co/cbica/Brain2Vec)
 
 ![brain2vec-example](assets/brain2vec_example.png)
 *Left: Masked input | Middle: Reconstruction (Z-normalized) | Right: Ground truth*
