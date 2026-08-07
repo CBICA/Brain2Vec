@@ -106,7 +106,8 @@ srun Brain2Vec vit_finetune --img_size 128 \
                          --model vit_base \
                          --label_dict "csv with MRID and target columns" \
                          --target "target column" \
-                         --pretrain "pre-trained model weights (.pth)" \
+                         --pretrain "brain2vec.safetensors (model name from our
+                         hugging face" \
                          --in_dir "input_dir/"
                          --batch_size 32 \
                          --out_dir "output_dir/" \
@@ -131,7 +132,6 @@ classifiers, such as SVM or MLP models.
 ```bash
 python inference.py brain2vec_inference --model brain2vec_base \
                                     --img_size 128 \
-                                    --model_weights "model weights (.pth)" \
                                     --in_dir "path to directory with niftii scans" \
                                     --out_json "name of json file with output embeddings" \
                                     --device cuda
@@ -140,7 +140,6 @@ python inference.py vit_inference --model vit_base \
                                 --num_classes 1 \
                                 --img_size 128 \
                                 --mode regression \
-                                --model_weights "model weights (.pth)" \
                                 --in_dir "input directory with niftii scans" \
                                 --out_csv "output csv file with predictions" \
                                 --device cuda

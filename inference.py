@@ -22,6 +22,7 @@ from Brain2Vec.models.brain2vec import (
 )
 from Brain2Vec.models.utils import load_brain2vec
 from Brain2Vec.models.vit import vit_base_patch8, vit_huge_patch8, vit_large_patch8
+from Brain2Vec.trainer.utils import load_weights
 
 
 def brain2vec_models() -> dict:
@@ -61,13 +62,19 @@ def run_brain2vec_inference(args: Any) -> None:
     torch.manual_seed(42)
     if args.device == "cuda":
         torch.cuda.manual_seed(42)
-    model = load_brain2vec(
-        repo_id="cbica/Brain2Vec",
-        weights_filename="brain2vec.safetensors",
-        model_class=brain2vec_models()[args.model],
-        model_kwargs={"img_size": args.img_size},
-        device=args.device,
-    )
+
+    model_class = brain2vec_models()[args.model]
+    if len(args.model_weights) == 0:
+        model = load_brain2vec(
+            repo_id="cbica/Brain2Vec",
+            weights_filename="brain2vec.safetensors",
+            model_class=model_class,
+            model_kwargs={"img_size": args.img_size},
+            device=args.device,
+        )
+    else:
+        model = model_class(img_size=args.img_size)
+        load_weights(model, args.model_weights, args.device)
 
     dataloader = test_dataloader(args.in_dir)
 
@@ -91,13 +98,21 @@ def run_brain2vec_inference(args: Any) -> None:
 @torch.no_grad()  # type: ignore
 def run_vit_inference(args: Any) -> None:
     torch.manual_seed(42)
-    model = load_brain2vec(
-        repo_id="cbica/Brain2Vec",
-        weights_filename="vit_ba_finetuned.safetensors",
-        model_class=vit_models()[args.model],
-        model_kwargs={"img_size": args.img_size, "num_classes": int(args.num_classes)},
-        device=args.device,
-    )
+    model_class = vit_models()[args.model]
+    if len(args.model_weights) == 0:
+        model = load_brain2vec(
+            repo_id="cbica/Brain2Vec",
+            weights_filename="vit_ba_finetuned.safetensors",
+            model_class=model_class,
+            model_kwargs={
+                "img_size": args.img_size,
+                "num_classes": int(args.num_classes),
+            },
+            device=args.device,
+        )
+    else:
+        model = model_class(args.img_size, int(args.num_classes))
+        load_weights(model, args.model_weights, args.device)
 
     if args.out_json == "":
         args.out_json = None
@@ -184,6 +199,7 @@ def main() -> None:
         "--model_weights",
         type=str,
         required=True,
+        default="",
         help="Path to brain2vec model weights",
     )
 
@@ -246,7 +262,8 @@ def main() -> None:
     vit_inference.add_argument(
         "--model_weights",
         type=str,
-        required=True,
+        required=False,
+        default="",
         help="Path to brain2vec model weights",
     )
 
