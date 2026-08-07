@@ -111,7 +111,7 @@ def run_vit_inference(args: Any) -> None:
             device=args.device,
         )
     else:
-        model = model_class(args.img_size, int(args.num_classes))
+        model = model_class(img_size=args.img_size, num_classes=int(args.num_classes))
         load_weights(model, args.model_weights, args.device)
 
     if args.out_json == "":
