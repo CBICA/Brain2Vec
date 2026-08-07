@@ -74,6 +74,7 @@ class NiftiLoader(Dataset):
             ),
         ]
         self.resize = tio.Resize(self.img_size)
+        self.normalize = tio.ZNormalization(masking_method=None)
         self._fetch_images()
         if mode == "train":
             self._fetch_labels()
@@ -103,6 +104,7 @@ class NiftiLoader(Dataset):
 
         img = tio.ScalarImage(img_path)
         img = self.resize(img)
+        img = self.normalize(img)
 
         if self.data_augmentation:
             sample = [random.randint(0, 4) for _ in range(len(self.transforms))]
