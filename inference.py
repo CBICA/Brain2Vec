@@ -198,7 +198,7 @@ def main() -> None:
     brain2vec_inference.add_argument(
         "--model_weights",
         type=str,
-        required=True,
+        required=False,
         default="",
         help="Path to brain2vec model weights",
     )
