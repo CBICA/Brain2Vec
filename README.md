@@ -29,10 +29,9 @@ convergence speed on downstream deep learning tasks
 
 ## Using Brain2Vec as a feature extractor
 
-We proved that using Brain2Vec embeddings we get competitive classification
+We proved that using Brain2Vec embeddings we get superior or on-par classification
 performance across multiple disease groups as well as better accuracy than
-DLMUSE ROI's for brain age regression and on-par accuracy with DL fine-tuned
-models.
+NeuroJEPA and DLMUSE ROI's for brain age regression.
 
 ![dx-classification-results](assets/dx_classification_results.png)
 ![ba-regression-results](assets/ba_regression_results.png)
