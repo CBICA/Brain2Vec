@@ -104,7 +104,8 @@ class NiftiLoader(Dataset):
 
         img = tio.ScalarImage(img_path)
         img = self.resize(img)
-        img = self.normalize(img)
+        if self.mode != "pretrain":
+            img = self.normalize(img)
 
         if self.data_augmentation:
             sample = [random.randint(0, 4) for _ in range(len(self.transforms))]
