@@ -22,7 +22,7 @@ class NiftiLoader(Dataset):
     """
     Class for the SingleSubject Dataloader. Returns the input tensor with it's label(as a torch.tensor)
 
-    :param mode: train(for ViT fine-tuning), pretrain(for Brain2Vec) or inference
+    :param mode: pretrain(for Brain2Vec), train(for ViT fine-tuning) or inference
     :type mode: str
     :param in_dir: The input directory that contains train/ test/ and eval/ folders
     :type in_dir: str

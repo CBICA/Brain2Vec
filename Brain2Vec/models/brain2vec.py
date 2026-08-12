@@ -234,9 +234,6 @@ class Brain2Vec(nn.Module):
             ids_shuffle_list.append(ids_shuffle)
             len_keep_list.append(len(ids_keep))
 
-        # Shared keep-length across the batch -- see NOTE above.
-        # (Previously this read len_keep_list[0] unconditionally inside the
-        # loop, silently applying sample 0's split point to every sample.)
         len_keep = min(len_keep_list)
 
         ids_shuffle = torch.stack(
