@@ -246,7 +246,7 @@ def run_vit_finetune(args: Any) -> None:
         model_without_ddp = model.module
 
     mixup = None
-    if args.mixup > 0.0 and args.mode != "regression":
+    if args.mixup > 0.0:
         print("Mixup Activated!")
         mixup = MixUp(alpha=args.mixup)
 
@@ -258,11 +258,12 @@ def run_vit_finetune(args: Any) -> None:
     )
 
     if mixup is not None:
-        assert args.mode != "regression", "Can't add MixUp with regression labels"
         if args.mode == "binary":
             loss_fn = mixup_criterion(criterion=torch.nn.BCEWithLogitsLoss())
-        else:
+        elif args.mode == "multiclass":
             loss_fn = mixup_criterion(criterion=torch.nn.CrossEntropyLoss())
+        else:
+            loss_fn = mixup_criterion(criterion=torch.nn.L1Loss(reduction="mean"))
     elif args.smoothing > 0.0:
         assert (
             args.mode != "regression"
@@ -563,7 +564,7 @@ def main() -> None:
     vit_finetune.add_argument(
         "--smoothing",
         type=float,
-        default=0.1,
+        default=0.0,
     )
 
     # mixup specifics
