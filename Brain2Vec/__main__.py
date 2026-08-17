@@ -291,7 +291,7 @@ def run_vit_finetune(args: Any) -> None:
         num_classes=None if args.num_classes == -1 else args.num_classes,
         target_dir=args.out_dir,
         model_name=args.model_name,
-        device=args.gpu,
+        device=args.device,
         verbose=args.verbose,
     )
 
