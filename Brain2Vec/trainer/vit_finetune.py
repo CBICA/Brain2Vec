@@ -98,11 +98,16 @@ def train_step(
 
         if mixup_fn is not None:
             X, y_a, y_b, lam = mixup_fn(X, y)
+            y_target_for_metrics = lam * y_a + (1 - lam) * y_b
+            y_dominant = y_a if lam >= 0.5 else y_b
+        else:
+            y_target_for_metrics = y
+            y_dominant = y_original
 
         optimizer.zero_grad()
 
         # make prediction
-        with torch.autocast(device_type="cuda", dtype=torch.bfloat16):
+        with torch.autocast(device_type=device, dtype=torch.bfloat16):
             y_pred = model(X)
             if mode != "multiclass":
                 y_pred = y_pred.squeeze()
@@ -117,26 +122,27 @@ def train_step(
 
         optimizer.step()
 
-        torch.cuda.synchronize()
+        if "cuda" in str(device):
+            torch.cuda.synchronize()
 
         if mode == "regression":
             stats["train_mae"] += loss.item()
-            mse.update(y_pred, y)
-            nrmse.update(y_pred, y)
-            r2_score.update(y_pred, y)
+            mse.update(y_pred, y_target_for_metrics)
+            nrmse.update(y_pred, y_target_for_metrics)
+            r2_score.update(y_pred, y_target_for_metrics)
         else:
             if mode == "binary":
-                y_pred_classes = torch.sigmoid(y_pred > 0.5).float()
+                y_pred_classes = (torch.sigmoid(y_pred) > 0.5).float()
             else:
                 _, y_pred_classes = y_pred.topk(1)
                 y_pred_classes = y_pred_classes.squeeze(dim=-1)
 
-            acc.update(y_pred_classes, y_original)
+            acc.update(y_pred_classes, y_dominant)
             # auc.update(y_pred, y)
-            recall.update(y_pred_classes, y_original)
-            precision.update(y_pred_classes, y_original)
-            specificity.update(y_pred_classes, y_original)
-            f1_score.update(y_pred_classes, y_original)
+            recall.update(y_pred_classes, y_dominant)
+            precision.update(y_pred_classes, y_dominant)
+            specificity.update(y_pred_classes, y_dominant)
+            f1_score.update(y_pred_classes, y_dominant)
 
     if mode == "regression":
         stats["train_mae"] = stats["train_mae"] / float(len(dataloader))
@@ -222,12 +228,15 @@ def test_step(
             else:
                 X, y = X.float(), y.long()
 
-            with torch.autocast(device_type="cuda", dtype=torch.bfloat16):
+            with torch.autocast(device_type=device, dtype=torch.bfloat16):
                 test_pred = model(X)
                 if mode != "multiclass":
                     test_pred = test_pred.squeeze()
                 if mode == "regression":
-                    loss = loss_fn(test_pred, y)
+                    actual_criterion = (
+                        loss_fn.criterion if hasattr(loss_fn, "criterion") else loss_fn
+                    )
+                    loss = actual_criterion(test_pred, y)
 
             if mode == "regression":
                 stats["test_mae"] += loss.item()
