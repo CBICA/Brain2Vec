@@ -195,6 +195,7 @@ def run_vit_finetune(args: Any) -> None:
             model_class=model_class,
             model_kwargs={
                 "img_size": args.img_size,
+                "num_classes": 1 if args.num_classes == -1 else args.num_classes,
             },
             weights_filename=args.pretrain,
             device=args.device,
