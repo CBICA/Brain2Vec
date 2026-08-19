@@ -152,7 +152,7 @@ def run_brain2vec_pretrain(args: Any) -> None:
     optimizer = select_optimizer(
         model=model,
         optimizer=args.optimizer,
-        lr=args.lr,
+        lr=eff_lr,
         weight_decay=args.weight_decay,
     )
 
