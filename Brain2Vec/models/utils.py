@@ -174,5 +174,4 @@ def load_brain2vec(
             print(f"[load_brain2vec] unexpected keys: {unexpected}")
 
     model.to(device)
-    model.eval()
     return model

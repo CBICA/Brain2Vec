@@ -78,6 +78,8 @@ def run_brain2vec_inference(args: Any) -> None:
 
     dataloader = test_dataloader(args.in_dir)
 
+    model.eval()
+
     out_features = {}
     for _, (imgs, mrids) in enumerate(dataloader):
         imgs = imgs.to(args.device)
@@ -119,8 +121,8 @@ def run_vit_inference(args: Any) -> None:
 
     dataloader = test_dataloader(args.in_dir)
 
-    model.to(args.device)
     model.eval()
+
     y_preds = []
     out_features = []
 
