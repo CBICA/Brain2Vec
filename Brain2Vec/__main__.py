@@ -20,7 +20,7 @@ from Brain2Vec.models.brain2vec import (
     brain2vec_huge_patch8_dec512d8b,
     brain2vec_large_patch8_dec512d8b,
 )
-from Brain2Vec.models.utils import load_brain2vec
+from Brain2Vec.models.utils import freeze_early_layers, load_brain2vec
 from Brain2Vec.models.vit import vit_base_patch8, vit_huge_patch8, vit_large_patch8
 from Brain2Vec.trainer.brain2vec_pretrain import train as brain2vec_pretrain
 from Brain2Vec.trainer.utils import init_distributed_mode
@@ -206,6 +206,8 @@ def run_vit_finetune(args: Any) -> None:
             img_size=args.img_size,
             num_classes=1 if args.num_classes == -1 else args.num_classes,
         )
+    if args.freeze_ratio > 0.0:
+        freeze_early_layers(model, args.freeze_ratio)
 
     if args.distributed:
         torch.cuda.set_device(args.gpu)
@@ -558,6 +560,12 @@ def main() -> None:
         type=int,
         default=1,
         required=False,
+    )
+
+    vit_finetune.add_argument(
+        "--freeze_ratio",
+        type=float,
+        default=0.0,
     )
 
     # augmentation specifics

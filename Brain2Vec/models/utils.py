@@ -9,6 +9,7 @@
 # https://www.med.upenn.edu/cbica/software-agreement-non-commercial.html
 
 import json
+import math
 from pathlib import Path
 from typing import Any, Optional, Type
 
@@ -109,6 +110,25 @@ def get_1d_sincos_pos_embed_from_grid(embed_dim: int, pos: torch.Tensor) -> np.n
 
     emb = np.concatenate([emb_sin, emb_cos], axis=1)  # (M, D)
     return emb
+
+
+def freeze_early_layers(model: nn.Module, freeze_ratio: float = 0.70) -> None:
+    if hasattr(model, "patch_embed"):
+        for param in model.patch_embed.parameters():
+            param.requires_grad = False
+
+    if model.cls_token is not None:
+        model.cls_token.requires_grad = False
+
+    if model.pos_embed is not None:
+        model.pos_embed.requires_grad = False
+
+    num_blocks = len(model.blocks)
+    num_to_freeze = math.floor(num_blocks * freeze_ratio)
+
+    for i in range(num_to_freeze):
+        for param in model.blocks[i].parameters():
+            param.requires_grad = False
 
 
 def download_file(
