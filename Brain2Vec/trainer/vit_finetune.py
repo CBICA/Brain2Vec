@@ -110,7 +110,8 @@ def train_step(
         with torch.autocast(device_type=device, dtype=torch.bfloat16):
             y_pred = model(X)
             if mode != "multiclass":
-                y_pred = y_pred.squeeze()
+                y_pred = y_pred.view(-1)
+                y = y.view(-1)
 
             # loss computation
             if mixup_fn is not None:
@@ -228,7 +229,8 @@ def test_step(
             with torch.autocast(device_type=device, dtype=torch.bfloat16):
                 test_pred = model(X)
                 if mode != "multiclass":
-                    test_pred = test_pred.squeeze()
+                    test_pred = test_pred.view(-1)
+                    y = y.view(-1)
                 if mode == "regression":
                     actual_criterion = (
                         loss_fn.criterion if hasattr(loss_fn, "criterion") else loss_fn
