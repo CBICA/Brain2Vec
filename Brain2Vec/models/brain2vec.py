@@ -314,6 +314,32 @@ class Brain2Vec(nn.Module):
 
         return x_masked, mask, ids_restore
 
+    def get_last_selfattention(self, x: torch.Tensor) -> torch.Tensor:
+        x = self.patch_embed(x)
+        x = x + self.pos_embed[:, 1:, :]
+
+        cls_token = self.cls_token + self.pos_embed[:, :1, :]
+        cls_tokens = cls_token.expand(x.shape[0], -1, -1)
+        x = torch.cat((cls_tokens, x), dim=1)
+
+        for i, blk in enumerate(self.blocks):
+            if i < len(self.blocks) - 1:
+                x = blk(x)
+            else:
+                B, N, C = x.shape
+
+                qkv = (
+                    blk.attn.qkv(x)
+                    .reshape(B, N, 3, blk.attn.num_heads, C // blk.attn.num_heads)
+                    .permute(2, 0, 3, 1, 4)
+                )
+                q, k, _ = qkv[0], qkv[1], qkv[2]
+
+                attn = (q @ k.transpose(-2, -1)) * blk.attn.scale
+                attn = attn.softmax(dim=-1)
+
+                return attn
+
     def forward_encoder(
         self,
         x: torch.Tensor,
