@@ -17,6 +17,7 @@ classification models trained on brain2vec embeddings.
 > [!IMPORTANT]
 > To use our model, you need to apply for access to our [hugging face model card](https://huggingface.co/cbica/Brain2Vec). Otherwise, you can directly use Brain2Vec on [NiChart](https://neuroimagingchart.com).
 
+![self-attention](assets/self_attention.png)
 ![brain2vec-example](assets/brain2vec_example.png)
 *Left: Masked input | Middle: Reconstruction (Z-normalized) | Right: Ground truth*
 
