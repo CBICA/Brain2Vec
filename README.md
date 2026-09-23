@@ -1,11 +1,21 @@
 # Brain2Vec: A Self-Supervised 3D Foundation Model for Structural Brain MRI
 
+<div align="center">
+
+[![arXiv](https://img.shields.io/badge/arXiv-XXXX.XXXXX-b31b1b.svg)]()
+[![HuggingFace](https://img.shields.io/badge/🤗%20Hugging%20Face-Model-yellow)](https://huggingface.co/cbica/Brain2Vec)
+
+</div>
+
 Code for the [Brain2Vec]() paper, a 3D foundation model pre-trained on 74,425
 T1-weighted brain MRI scans. In this repo, you can pre-train your own brain2vec
 model, fine-tune a Vision Transformer (ViT) using our pre-trained brain2vec
 encoder, train your own downstream ML models using brain2vec output embeddings
 or perform downstream classification inference using our pre-trained disease
 classification models trained on brain2vec embeddings.
+
+> [!IMPORTANT]
+> To use our model, you need to apply for access to our [hugging face model card](https://huggingface.co/cbica/Brain2Vec). Otherwise, you can directly use Brain2Vec on [NiChart](https://neuroimagingchart.com).
 
 ![brain2vec-example](assets/brain2vec_example.png)
 *Left: Masked input | Middle: Reconstruction (Z-normalized) | Right: Ground truth*
@@ -19,27 +29,45 @@ convergence speed on downstream deep learning tasks
 
 ## Using Brain2Vec as a feature extractor
 
-We proved that using Brain2Vec embeddings we get competitive classification
+We proved that using Brain2Vec embeddings we get superior or on-par classification
 performance across multiple disease groups as well as better accuracy than
-DLMUSE ROI's for brain age regression and on-par accuracy with DL fine-tuned
-models.
+NeuroJEPA and DLMUSE ROI's for brain age regression.
 
 ![dx-classification-results](assets/dx_classification_results.png)
 ![ba-regression-results](assets/ba_regression_results.png)
 
+We also proved that foundation models focus on limited but important set of brain
+regions. Manipulating a subset of important latent features produces monotonic,
+region-specific effects on the reconstructed anatomy.
+
+![cross-region-correlation](assets/region_profile_lines.png)
 
 * Brain2Vec implementation follows the code of [Masked Autoencoders](https://github.com/facebookresearch/mae) from Meta.
 
 * Vision Transformers implementation follows the code of [timm](https://github.com/huggingface/pytorch-image-models) from huggingface.
 
-* You can use Brain2Vec -- for both feature extraction and disease classification/brain age regression -- on [NiChart](https://cloud.neuroimagingchart.com) by simply dragging and dropping your NIfTI files.
+* You can use Brain2Vec -- for both feature extraction and disease classification/brain age regression -- on [NiChart](https://cloud.neuroimagingchart.com) by simply dragging and dropping your NIfTI files. **No GPU or installation required**.
 
 * Before using any of our models locally, make sure that the input is
   skull-stripped and linearly registered to a common atlas space. We use
-  [NiChart\_DLMUSE](https://github.com/CBICA/NiChart_DLMUSE) for skull-stripping
+  [NiChart\_DLMUSE](https://github.com/CBICA/NiChart_DLMUSE) for skull-stripping (DLICV folder)
   and [flirt](https://fsl.fmrib.ox.ac.uk/fsl/docs/registration/flirt/index.html)
-  for registration. Also, make sure that your scan's suffix is **_T1_LPS_DLICV_aligned.nii.gz**
-  in order for our dataloader to work.
+  for registration.
+
+  ```bash
+  NiChart_DLMUSE -i {dir with nifti files} -o ... ---refaced_data
+  flirt -i {DLICV aligned output} -ref img_template.nii.gz -o ...
+  ```
+
+If you use our model, make sure to cite our work:
+```
+@Article{Brain2Vec2026,
+  author  = {Spiros Maggioros and Guray Erus and Gareth Harman and George Aidinis},
+  journal = {arXiv:},
+  title   = {Brain2Vec: A Self-Supervised 3D Foundation Model for Structural Brain MRI},
+  year    = {2026},
+}
+```
 
 ## Installation
 Brain2Vec exists as a PyPI package and can be installed using pip
@@ -50,7 +78,7 @@ pip install Brain2Vec
 ## Brain2Vec pre-training
 
 We trained with two A100 GPUs for 500 epochs with a patience of 20 epochs. For
-more training details please read Brain2Vec paper.
+more training details please read the Brain2Vec paper.
 Using our code, you can parallelize your training on SLURM cluster environments.
 Other environments are supported but not tested, so bugs may appear.
 
@@ -87,7 +115,8 @@ srun Brain2Vec vit_finetune --img_size 128 \
                          --model vit_base \
                          --label_dict "csv with MRID and target columns" \
                          --target "target column" \
-                         --pretrain "pre-trained model weights (.pth)" \
+                         --pretrain "brain2vec.safetensors (model name from our
+                         hugging face)" \
                          --in_dir "input_dir/"
                          --batch_size 32 \
                          --out_dir "output_dir/" \
@@ -112,7 +141,6 @@ classifiers, such as SVM or MLP models.
 ```bash
 python inference.py brain2vec_inference --model brain2vec_base \
                                     --img_size 128 \
-                                    --model_weights "model weights (.pth)" \
                                     --in_dir "path to directory with niftii scans" \
                                     --out_json "name of json file with output embeddings" \
                                     --device cuda
@@ -121,7 +149,6 @@ python inference.py vit_inference --model vit_base \
                                 --num_classes 1 \
                                 --img_size 128 \
                                 --mode regression \
-                                --model_weights "model weights (.pth)" \
                                 --in_dir "input directory with niftii scans" \
                                 --out_csv "output csv file with predictions" \
                                 --device cuda

@@ -20,31 +20,24 @@ from Brain2Vec.models.brain2vec import (
     brain2vec_huge_patch8_dec512d8b,
     brain2vec_large_patch8_dec512d8b,
 )
+from Brain2Vec.models.utils import load_brain2vec
 from Brain2Vec.models.vit import vit_base_patch8, vit_huge_patch8, vit_large_patch8
 from Brain2Vec.trainer.utils import load_weights
 
 
-def brain2vec_models(img_size: int, device: str = "cuda") -> dict:
+def brain2vec_models() -> dict:
     return {
-        "brain2vec_base": brain2vec_base_patch8_dec512d8b(img_size=img_size).to(device),
-        "brain2vec_large": brain2vec_large_patch8_dec512d8b(img_size=img_size).to(
-            device
-        ),
-        "brain2vec_huge": brain2vec_huge_patch8_dec512d8b(img_size=img_size).to(device),
+        "brain2vec_base": brain2vec_base_patch8_dec512d8b,
+        "brain2vec_large": brain2vec_large_patch8_dec512d8b,
+        "brain2vec_huge": brain2vec_huge_patch8_dec512d8b,
     }
 
 
-def vit_models(img_size: int, num_classes: int, device: str = "cuda") -> dict:
+def vit_models() -> dict:
     return {
-        "vit_base": (
-            vit_base_patch8(img_size=img_size, num_classes=num_classes).to(device)
-        ),
-        "vit_large": (
-            vit_large_patch8(img_size=img_size, num_classes=num_classes).to(device)
-        ),
-        "vit_huge": (
-            vit_huge_patch8(img_size=img_size, num_classes=num_classes).to(device)
-        ),
+        "vit_base": vit_base_patch8,
+        "vit_large": vit_large_patch8,
+        "vit_huge": vit_huge_patch8,
     }
 
 
@@ -52,6 +45,7 @@ def test_dataloader(in_dir: str) -> DataLoader:
     single_loader = NiftiLoader(
         mode="inference",
         in_dir=in_dir,
+        augmentation=False,
     )
     dataloader = DataLoader(
         single_loader,
@@ -66,15 +60,27 @@ def test_dataloader(in_dir: str) -> DataLoader:
 @torch.no_grad()  # type: ignore
 def run_brain2vec_inference(args: Any) -> None:
     torch.manual_seed(42)
-    model = brain2vec_models(args.img_size, args.device)[args.model]
-    load_weights(model, args.model_weights, args.device)
+    if args.device == "cuda":
+        torch.cuda.manual_seed(42)
+
+    model_class = brain2vec_models()[args.model]
+    if len(args.model_weights) == 0:
+        model = load_brain2vec(
+            repo_id="cbica/Brain2Vec",
+            weights_filename="brain2vec.safetensors",
+            model_class=model_class,
+            model_kwargs={"img_size": args.img_size},
+            device=args.device,
+        )
+    else:
+        model = model_class(img_size=args.img_size)
+        load_weights(model, args.model_weights, args.device)
 
     dataloader = test_dataloader(args.in_dir)
 
-    model.to(args.device)
     model.eval()
-    out_features = {}
 
+    out_features = {}
     for _, (imgs, mrids) in enumerate(dataloader):
         imgs = imgs.to(args.device)
         imgs = imgs.float()
@@ -94,16 +100,29 @@ def run_brain2vec_inference(args: Any) -> None:
 @torch.no_grad()  # type: ignore
 def run_vit_inference(args: Any) -> None:
     torch.manual_seed(42)
-    model = vit_models(args.img_size, int(args.num_classes), args.device)[args.model]
-    load_weights(model, args.model_weights, args.device)
+    model_class = vit_models()[args.model]
+    if len(args.model_weights) == 0:
+        model = load_brain2vec(
+            repo_id="cbica/Brain2Vec",
+            weights_filename="vit_ba_finetuned.safetensors",
+            model_class=model_class,
+            model_kwargs={
+                "img_size": args.img_size,
+                "num_classes": int(args.num_classes),
+            },
+            device=args.device,
+        )
+    else:
+        model = model_class(img_size=args.img_size, num_classes=int(args.num_classes))
+        load_weights(model, args.model_weights, args.device)
 
     if args.out_json == "":
         args.out_json = None
 
     dataloader = test_dataloader(args.in_dir)
 
-    model.to(args.device)
     model.eval()
+
     y_preds = []
     out_features = []
 
@@ -142,7 +161,7 @@ def run_vit_inference(args: Any) -> None:
     if args.out_json:
         assert len(out_features) != 0
         with open(args.out_json, "w") as f:
-            json.dump(out_features, f)
+            json.dump(out_features, f, indent=4)
         print(f"Embeddings saved to {args.out_json} successfully!")
 
     output_dir = os.path.dirname(args.out_csv)
@@ -181,7 +200,8 @@ def main() -> None:
     brain2vec_inference.add_argument(
         "--model_weights",
         type=str,
-        required=True,
+        required=False,
+        default="",
         help="Path to brain2vec model weights",
     )
 
@@ -244,7 +264,8 @@ def main() -> None:
     vit_inference.add_argument(
         "--model_weights",
         type=str,
-        required=True,
+        required=False,
+        default="",
         help="Path to brain2vec model weights",
     )
 

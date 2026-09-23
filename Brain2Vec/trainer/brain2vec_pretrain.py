@@ -6,11 +6,12 @@
 # https://www.med.upenn.edu/cbica/software-agreement-non-commercial.html
 
 import torch
-from NiChart_ViT.trainer.utils import EarlyStopper
-from NiChart_ViT.trainer.utils import NativeScalerWithGradNormCount as NativeScaler
-from NiChart_ViT.trainer.utils import all_reduce_mean, save_model
 from torch.utils.data import DataLoader
 from tqdm.auto import tqdm
+
+from Brain2Vec.trainer.utils import EarlyStopper
+from Brain2Vec.trainer.utils import NativeScalerWithGradNormCount as NativeScaler
+from Brain2Vec.trainer.utils import all_reduce_mean, save_model
 
 
 def train_step(
@@ -29,11 +30,11 @@ def train_step(
     mse = 0.0
     num_updates = 0
 
-    for data_iter_step, (X, _) in enumerate(dataloader):
-        X = X.to(device)
-        X = X.float()
+    optimizer.zero_grad()
 
-        optimizer.zero_grad()
+    for data_iter_step, (X, _) in enumerate(dataloader):
+        X = X.to(device, non_blocking=True)
+        X = X.float()
 
         with torch.autocast(device_type="cuda", dtype=torch.bfloat16):
             loss, _, _ = model(
@@ -80,7 +81,7 @@ def test_step(
 
     with torch.no_grad():
         for X, _ in dataloader:
-            X = X.to(device)
+            X = X.to(device, non_blocking=True)
             X = X.float()
 
             with torch.autocast(device_type="cuda", dtype=torch.bfloat16):
@@ -165,10 +166,10 @@ def train(
                 print(
                     f"[INFO] New best model saved at {target_dir} with test MSE: {best_res:.4f}",
                 )
-            if early_stopper.early_stop(test_mse):
-                if verbose:
-                    print("Early stopping the training")
-                break
+        if early_stopper.early_stop(test_mse):
+            if verbose:
+                print("Early stopping the training")
+            break
 
         if verbose:
             print(

@@ -52,6 +52,8 @@ def train_disease_classification(args: Any) -> None:
             y_train_outer,
             y_test_outer,
             mode="binary",
+            n_trials=args.n_trials,
+            n_jobs=args.n_jobs,
             save_to=f"svc_brain2vec_embeddings_fold{fold_idx}.pkl",
         )
         print(f" Fold {fold_idx} stats: {stats}")
@@ -97,6 +99,8 @@ def train_ba_regression(args: Any) -> None:
             y_train_outer,
             y_test_outer,
             mode="regression",
+            n_trials=args.n_trials,
+            n_jobs=args.n_jobs,
             save_to=f"svr_ba_brain2vec_fold{fold_idx}.pkl",
         )
         print(f" Fold {fold_idx} stats: {stats}")
@@ -136,6 +140,22 @@ def main() -> None:
         help="DX embeddings computed by a brain2vec encoder",
     )
 
+    dx_classification.add_argument(
+        "--n_trials",
+        type=int,
+        required=False,
+        default=50,
+        help="Number of trials for optuna",
+    )
+
+    dx_classification.add_argument(
+        "--n_jobs",
+        type=int,
+        required=False,
+        default=4,
+        help="Number of parallel workes for optuna trials",
+    )
+
     dx_classification.set_defaults(func=train_disease_classification)
 
     ba_regression = subparsers.add_parser(
@@ -154,6 +174,22 @@ def main() -> None:
         type=str,
         required=True,
         help="CSV file with MRID and Age columns",
+    )
+
+    ba_regression.add_argument(
+        "--n_trials",
+        type=int,
+        required=False,
+        default=50,
+        help="Number of trials for optuna",
+    )
+
+    ba_regression.add_argument(
+        "--n_jobs",
+        type=int,
+        required=False,
+        default=4,
+        help="Number of parallel workes for optuna trials",
     )
 
     ba_regression.set_defaults(func=train_ba_regression)

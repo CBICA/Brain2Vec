@@ -48,10 +48,10 @@ class Brain2Vec(nn.Module):
     def __init__(
         self,
         img_size: int,
-        patch_size: int,
-        embed_dim: int = 1024,
-        depth: int = 24,
-        num_heads: int = 16,
+        patch_size: int = 8,
+        embed_dim: int = 768,
+        depth: int = 12,
+        num_heads: int = 12,
         decoder_embed_dim: int = 512,
         decoder_depth: int = 8,
         decoder_num_heads: int = 16,
@@ -199,7 +199,12 @@ class Brain2Vec(nn.Module):
         mask_ratio: float,
     ) -> Any:
         """
-        Mask patches only where ground_truth == 1
+        Mask patches only where ground_truth == 1 (patches outside the ROI,
+        ground_truth == 0, are always kept visible).
+
+        mask_ratio here is the fraction of the ROI itself to mask (not a
+        fraction of the whole volume). Use mask_ratio=1.0 to mask the
+        entire ROI and force the decoder to fully regenerate it.
         """
         N, L, D = x.shape
         device = x.device
@@ -229,9 +234,11 @@ class Brain2Vec(nn.Module):
             ids_shuffle_list.append(ids_shuffle)
             len_keep_list.append(len(ids_keep))
 
-            len_keep = len_keep_list[0]
+        len_keep = min(len_keep_list)
 
-        ids_shuffle = torch.stack(ids_shuffle_list)
+        ids_shuffle = torch.stack(
+            ids_shuffle_list
+        )  # [N, L], full permutation per sample
         ids_restore = torch.argsort(ids_shuffle, dim=1)
 
         ids_keep = ids_shuffle[:, :len_keep]

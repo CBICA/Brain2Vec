@@ -8,11 +8,10 @@
 from typing import Callable, Optional
 
 import torch
-from NiChart_ViT.trainer.utils import EarlyStopper, all_reduce_mean, save_model
 from torch.utils.data import DataLoader
 from torchmetrics import (  # AUROC,
+    AUROC,
     Accuracy,
-    ConfusionMatrix,
     F1Score,
     MeanSquaredError,
     NormalizedRootMeanSquaredError,
@@ -23,6 +22,8 @@ from torchmetrics import (  # AUROC,
 )
 from tqdm.auto import tqdm
 from typing_extensions import Literal
+
+from Brain2Vec.trainer.utils import EarlyStopper, all_reduce_mean, save_model
 
 
 def train_step(
@@ -65,7 +66,7 @@ def train_step(
             acc = Accuracy(task=mode, average="macro", num_classes=num_classes).to(
                 device
             )
-            # auc = AUROC(task=mode, average="macro", num_classes=num_classes).to(device)
+            auc = AUROC(task=mode, average="macro", num_classes=num_classes).to(device)
             recall = Recall(task=mode, average="macro", num_classes=num_classes).to(
                 device
             )
@@ -80,7 +81,7 @@ def train_step(
             )
         else:
             acc = Accuracy(task=mode).to(device)
-            # auc = AUROC(task=mode).to(device)
+            auc = AUROC(task=mode).to(device)
             recall = Recall(task=mode).to(device)
             precision = Precision(task=mode).to(device)
             specificity = Specificity(task=mode).to(device)
@@ -97,14 +98,20 @@ def train_step(
 
         if mixup_fn is not None:
             X, y_a, y_b, lam = mixup_fn(X, y)
+            y_target_for_metrics = lam * y_a + (1 - lam) * y_b
+            y_dominant = y_a if lam >= 0.5 else y_b
+        else:
+            y_target_for_metrics = y
+            y_dominant = y_original
 
         optimizer.zero_grad()
 
         # make prediction
-        with torch.autocast(device_type="cuda", dtype=torch.bfloat16):
+        with torch.autocast(device_type=device, dtype=torch.bfloat16):
             y_pred = model(X)
             if mode != "multiclass":
-                y_pred = y_pred.squeeze()
+                y_pred = y_pred.view(-1)
+                y = y.view(-1)
 
             # loss computation
             if mixup_fn is not None:
@@ -116,26 +123,27 @@ def train_step(
 
         optimizer.step()
 
-        torch.cuda.synchronize()
+        if "cuda" in str(device):
+            torch.cuda.synchronize()
 
         if mode == "regression":
             stats["train_mae"] += loss.item()
-            mse.update(y_pred, y)
-            nrmse.update(y_pred, y)
-            r2_score.update(y_pred, y)
+            mse.update(y_pred, y_target_for_metrics)
+            nrmse.update(y_pred, y_target_for_metrics)
+            r2_score.update(y_pred, y_target_for_metrics)
         else:
             if mode == "binary":
-                y_pred_classes = torch.sigmoid(y_pred > 0.5).float()
+                y_pred_classes = (torch.sigmoid(y_pred) > 0.5).float()
             else:
                 _, y_pred_classes = y_pred.topk(1)
                 y_pred_classes = y_pred_classes.squeeze(dim=-1)
 
-            acc.update(y_pred_classes, y_original)
-            # auc.update(y_pred, y)
-            recall.update(y_pred_classes, y_original)
-            precision.update(y_pred_classes, y_original)
-            specificity.update(y_pred_classes, y_original)
-            f1_score.update(y_pred_classes, y_original)
+            acc.update(y_pred_classes, y_dominant)
+            auc.update(y_pred, y)
+            recall.update(y_pred_classes, y_dominant)
+            precision.update(y_pred_classes, y_dominant)
+            specificity.update(y_pred_classes, y_dominant)
+            f1_score.update(y_pred_classes, y_dominant)
 
     if mode == "regression":
         stats["train_mae"] = stats["train_mae"] / float(len(dataloader))
@@ -146,7 +154,7 @@ def train_step(
             stats["train_mae"] = all_reduce_mean(stats["train_mae"])
     else:
         stats["train_acc"] = acc.compute().item()
-        # stats["train_auc"] = auc.compute().item()
+        stats["train_auc"] = auc.compute().item()
         stats["train_recall"] = recall.compute().item()
         stats["train_precision"] = precision.compute().item()
         stats["train_specificity"] = specificity.compute().item()
@@ -181,7 +189,6 @@ def test_step(
             "test_precision": 0.0,
             "test_specificity": 0.0,
             "test_f1": 0.0,
-            "test_confussion_matrix": [],  # type: ignore
         }
 
         if mode == "multiclass":
@@ -189,7 +196,7 @@ def test_step(
             acc = Accuracy(task=mode, average="macro", num_classes=num_classes).to(
                 device
             )
-            # auc = AUROC(task=mode, average="macro", num_classes=num_classes).to(device)
+            auc = AUROC(task=mode, average="macro", num_classes=num_classes).to(device)
             recall = Recall(task=mode, average="macro", num_classes=num_classes).to(
                 device
             )
@@ -202,15 +209,13 @@ def test_step(
             f1_score = F1Score(task=mode, average="macro", num_classes=num_classes).to(
                 device
             )
-            confmat = ConfusionMatrix(task=mode, num_classes=num_classes).to(device)
         else:
             acc = Accuracy(task=mode).to(device)
-            # auc = AUROC(task=mode).to(device)
+            auc = AUROC(task=mode).to(device)
             recall = Recall(task=mode).to(device)
             precision = Precision(task=mode).to(device)
             specificity = Specificity(task=mode).to(device)
             f1_score = F1Score(task=mode).to(device)
-            confmat = ConfusionMatrix(task=mode).to(device)
 
     with torch.no_grad():
         for X, y in dataloader:
@@ -221,12 +226,16 @@ def test_step(
             else:
                 X, y = X.float(), y.long()
 
-            with torch.autocast(device_type="cuda", dtype=torch.bfloat16):
+            with torch.autocast(device_type=device, dtype=torch.bfloat16):
                 test_pred = model(X)
                 if mode != "multiclass":
-                    test_pred = test_pred.squeeze()
+                    test_pred = test_pred.view(-1)
+                    y = y.view(-1)
                 if mode == "regression":
-                    loss = loss_fn(test_pred, y)
+                    actual_criterion = (
+                        loss_fn.criterion if hasattr(loss_fn, "criterion") else loss_fn
+                    )
+                    loss = actual_criterion(test_pred, y)
 
             if mode == "regression":
                 stats["test_mae"] += loss.item()
@@ -241,12 +250,11 @@ def test_step(
                     y_pred_classes = y_pred_classes.squeeze(dim=-1)
 
                 acc.update(y_pred_classes, y)
-                # auc.update(test_pred, y)
+                auc.update(test_pred, y)
                 recall.update(y_pred_classes, y)
                 precision.update(y_pred_classes, y)
                 specificity.update(y_pred_classes, y)
                 f1_score.update(y_pred_classes, y)
-                confmat.update(y_pred_classes, y)
 
     if mode == "regression":
         stats["test_mae"] = stats["test_mae"] / float(len(dataloader))
@@ -257,7 +265,7 @@ def test_step(
             stats["test_mae"] = all_reduce_mean(stats["test_mae"])
     else:
         stats["test_acc"] = acc.compute().item()
-        # stats["test_auc"] = auc.compute().item()
+        stats["test_auc"] = auc.compute().item()
         stats["test_recall"] = recall.compute().item()
         stats["test_precision"] = precision.compute().item()
         stats["test_specificity"] = specificity.compute().item()
@@ -314,7 +322,6 @@ def train(
             "test_precision": [],
             "test_specificity": [],
             "test_f1": [],
-            "test_confussion_matrix": [],
         }
         best_res = 0.0
 
@@ -416,7 +423,6 @@ def train(
                     f"test_precision: {test_stats['test_precision']:.4f} | "
                     f"test_specificity: {test_stats['test_specificity']:.4f} | "
                     f"test_f1: {test_stats['test_f1']:.4f} | "
-                    f"test_confussion_matrix: {test_stats['test_confussion_matrix']}"
                 )
 
             results["train_acc"].append(train_stats["train_acc"])
