@@ -6,14 +6,18 @@
 *.pyc
 
 # model weights(will exist on hugging face)
+*.onnx.*
+*.onnx
 *.pth
 *.pkl
+*.safetensors
 
 # .sh jobs for the cluster
 *.sh
 
 # data
 *.json
+*.csv
 
 # images
 *.nii.gz
