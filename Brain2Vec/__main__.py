@@ -22,7 +22,13 @@ from Brain2Vec.models.brain2vec import (
 )
 from Brain2Vec.models.utils import freeze_early_layers, load_brain2vec
 from Brain2Vec.models.vit import vit_base_patch8, vit_huge_patch8, vit_large_patch8
+from Brain2Vec.models.vit_segmenter import (
+    vit_segmenter_base_patch8_dec512d8b,
+    vit_segmenter_huge_patch8_dec512d8b,
+    vit_segmenter_large_patch8_dec512d8b,
+)
 from Brain2Vec.trainer.brain2vec_pretrain import train as brain2vec_pretrain
+from Brain2Vec.trainer.segmenter_trainer import train as segmenter_trainer
 from Brain2Vec.trainer.utils import init_distributed_mode
 from Brain2Vec.trainer.vit_finetune import train as vit_finetune
 
@@ -66,6 +72,9 @@ def available_models() -> dict:
         "vit_base": vit_base_patch8,
         "vit_large": vit_large_patch8,
         "vit_huge": vit_huge_patch8,
+        "brain2vec_segmenter_base": vit_segmenter_base_patch8_dec512d8b,
+        "brain2vec_segmenter_large": vit_segmenter_large_patch8_dec512d8b,
+        "brain2vec_segmenter_huge": vit_segmenter_huge_patch8_dec512d8b,
     }
 
 
@@ -101,7 +110,7 @@ def select_optimizer(
     return AVAILABLE_OPTIMIZERS[optimizer]
 
 
-def run_brain2vec_pretrain(args: Any) -> None:
+def run_training_assertions(args: Any) -> None:
     assert args.lr > 0.0
     assert args.weight_decay >= 0.0
     assert args.batch_size > 0
@@ -109,10 +118,13 @@ def run_brain2vec_pretrain(args: Any) -> None:
     assert args.patience >= 0 and args.patience < args.epochs
     assert args.accum_iter >= 1
 
+
+def run_brain2vec_pretrain(args: Any) -> None:
+    run_training_assertions(args)
+    init_distributed_mode(args)
+
     avail_models = available_models()
     assert args.model in avail_models.keys()
-
-    init_distributed_mode(args)
 
     model = avail_models[args.model](img_size=args.img_size).to(args.device)
     if args.distributed:
@@ -129,6 +141,7 @@ def run_brain2vec_pretrain(args: Any) -> None:
         mode="pretrain",
         in_dir=args.in_dir,
         batch_size=args.batch_size,
+        loader_type="default",
         target=None,
         distributed=args.distributed,
         num_tasks=num_tasks if args.distributed else None,
@@ -145,7 +158,9 @@ def run_brain2vec_pretrain(args: Any) -> None:
 
     if args.distributed:
         model = torch.nn.parallel.DistributedDataParallel(
-            model, device_ids=[args.gpu], find_unused_parameters=True
+            model,
+            device_ids=[args.gpu],
+            find_unused_parameters=True,
         )
         model_without_ddp = model.module
 
@@ -176,13 +191,7 @@ def run_brain2vec_pretrain(args: Any) -> None:
 
 
 def run_vit_finetune(args: Any) -> None:
-    assert args.lr > 0.0
-    assert args.weight_decay >= 0.0
-    assert args.batch_size > 0
-    assert args.epochs > 0
-    assert args.patience >= 0 and args.patience < args.epochs
-    assert args.accum_iter >= 1
-
+    run_training_assertions(args)
     init_distributed_mode(args)
 
     avail_models = available_models()
@@ -223,6 +232,7 @@ def run_vit_finetune(args: Any) -> None:
         mode="finetune",
         in_dir=args.in_dir,
         batch_size=args.batch_size,
+        loader_type="default",
         label_dict_csv=args.label_dict,
         target=args.target,
         distributed=args.distributed,
@@ -294,6 +304,77 @@ def run_vit_finetune(args: Any) -> None:
         target_dir=args.out_dir,
         model_name=args.model_name,
         device=args.device,
+        verbose=args.verbose,
+    )
+
+
+def run_segmenter_trainer(args: Any) -> None:
+    run_training_assertions(args)
+    init_distributed_mode(args)
+
+    avail_models = available_models()
+    assert args.model in avail_models.keys()
+
+    model = avail_models[args.model](
+        img_size=args.img_size, n_classes=args.n_classes
+    ).to(args.device)
+    if args.distributed:
+        torch.cuda.set_device(args.gpu)
+        model = model.cuda(args.gpu)
+    else:
+        model = model.to(args.device)
+
+    model_without_ddp = model
+
+    num_tasks = args.world_size
+    global_rank = args.rank
+    train_dataloader, test_dataloader, _ = create_dataloaders(
+        mode="pretrain",
+        in_dir=args.in_dir,
+        batch_size=args.batch_size,
+        loader_type="segmenter",
+        target=None,
+        distributed=args.distributed,
+        num_tasks=num_tasks if args.distributed else None,
+        global_rank=global_rank if args.distributed else None,
+        img_size=(int(args.ims_size),) * 3,
+    )
+
+    eff_batch_size = args.batch_size * args.world_size
+    eff_lr = args.lr * eff_batch_size / 32
+
+    print("Base lr: %.2e" % args.lr, force=True, flush=True)  # type: ignore
+    print("Actual lr: %.2e" % eff_lr, force=True, flush=True)  # type: ignore
+    print(f"effective batch size: {eff_batch_size}", force=True, flush=True)  # type: ignore
+
+    if args.distributed:
+        model = torch.nn.parallel.DistributedDataParallel(
+            model,
+            device_ids=[args.gpu],
+            find_unused_parameters=True,
+        )
+        model_without_ddp = model.module
+
+    optimizer = select_optimizer(
+        model=model,
+        optimizer=args.optimizer,
+        lr=eff_lr,
+        weight_decay=args.weight_decay,
+    )
+
+    _ = segmenter_trainer(
+        model=model,
+        model_without_ddp=model_without_ddp,
+        distributed=args.distributed,
+        train_dataloader=train_dataloader,
+        test_dataloader=test_dataloader,
+        optimizer=optimizer,
+        epochs=args.epochs,
+        patience=args.patience,
+        accum_iter=args.accum_iter,
+        device=args.device,
+        target_dir=args.out_dir,
+        model_name=args.model_name,
         verbose=args.verbose,
     )
 

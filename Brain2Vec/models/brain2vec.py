@@ -411,7 +411,7 @@ class Brain2Vec(nn.Module):
 
 
 def brain2vec_base_patch8_dec512d8b(**kwargs: Any) -> nn.Module:
-    model = Brain2Vec(
+    return Brain2Vec(
         patch_size=8,
         embed_dim=768,
         depth=12,
@@ -423,11 +423,10 @@ def brain2vec_base_patch8_dec512d8b(**kwargs: Any) -> nn.Module:
         norm_layer=partial(nn.LayerNorm, eps=1e-6),
         **kwargs,
     )
-    return model
 
 
 def brain2vec_large_patch8_dec512d8b(**kwargs: Any) -> nn.Module:
-    model = Brain2Vec(
+    return Brain2Vec(
         patch_size=8,
         embed_dim=1056,
         depth=24,
@@ -439,11 +438,10 @@ def brain2vec_large_patch8_dec512d8b(**kwargs: Any) -> nn.Module:
         norm_layer=partial(nn.LayerNorm, eps=1e-6),
         **kwargs,
     )
-    return model
 
 
 def brain2vec_huge_patch8_dec512d8b(**kwargs: Any) -> nn.Module:
-    model = Brain2Vec(
+    return Brain2Vec(
         patch_size=8,
         embed_dim=1280,
         depth=32,
@@ -455,4 +453,3 @@ def brain2vec_huge_patch8_dec512d8b(**kwargs: Any) -> nn.Module:
         norm_layer=partial(nn.LayerNorm, eps=1e-6),
         **kwargs,
     )
-    return model

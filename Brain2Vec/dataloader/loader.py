@@ -124,10 +124,48 @@ class NiftiLoader(Dataset):
             return img_tensor, mrid
 
 
+class SegmenterLoader(Dataset):
+
+    def __init__(
+        self,
+        in_dir: str,
+        **kwargs: Any,
+    ) -> None:
+        super().__init__()
+
+        self.in_dir = in_dir
+        self.img_size = kwargs.get("img_size", (128, 128, 128))
+        self.resize = tio.Resize(self.img_size)
+        self.data: list[list] = []
+        self._fetch_images()
+
+    def _fetch_images(self) -> None:
+        for fldr_name in os.listdir(self.in_dir):
+            curr_mrid = []
+            for img_name in os.listdir(f"{self.in_dir}/{fldr_name}"):
+                curr_mrid.append(f"{self.in_dir}/{fldr_name}/{img_name}")
+            self.data.append(curr_mrid)
+
+    def __len__(self) -> int:
+        return len(self.data)
+
+    def __getitem__(self, index: int) -> Any:
+        img, mask = self.data[index]
+
+        img, mask = tio.ScalarImage(img), tio.ScalarImage(mask)
+        img, mask = self.resize(img), self.resize(mask)
+
+        img_tensor, mask_tensor = torch.tensor(
+            img.data, dtype=torch.float32
+        ), torch.tensor(mask.data, dtype=torch.float32)
+        return img_tensor, mask_tensor
+
+
 def create_dataloaders(
     mode: str,
     in_dir: str,
     batch_size: int,
+    loader_type: str = "single",
     distributed: bool = False,
     target: Optional[str] = None,
     label_dict_csv: Optional[str] = None,
@@ -144,9 +182,15 @@ def create_dataloaders(
     :type in_dir: str
     :param batch_size: The passed batch_size that the data will be splitted into
     :type batch_size: int
+    :param loader_type: Choose the type of resulted dataloaders. Either "default" or "segmenter".
+    :type loader_type: str
     :param label_dict_csv: The complete path to the .csv that contains the MRID and the target columns
     :type label_dict: str
     """
+    assert loader_type in ["default", "segmenter"]
+    if loader_type == "segmenter":
+        assert target is None
+        assert label_dict_csv is None
 
     train_dir = f"{in_dir}/train"
     test_dir = f"{in_dir}/test"
@@ -160,35 +204,53 @@ def create_dataloaders(
         label_dict = {row["MRID"]: row[target] for _, row in in_csv.iterrows()}
 
     if os.path.isdir(train_dir):
-        train_loader = NiftiLoader(
-            mode="pretrain" if mode == "pretrain" else "train",
-            in_dir=train_dir,
-            label_dict=None if mode == "pretrain" else label_dict,
-            data_augmentation=True,
-            img_size=img_size,
-        )
+        if loader_type == "segmenter":
+            train_loader = SegmenterLoader(
+                in_dir=train_dir,
+                img_size=img_size,
+            )
+        else:
+            train_loader = NiftiLoader(
+                mode="pretrain" if mode == "pretrain" else "train",
+                in_dir=train_dir,
+                label_dict=None if mode == "pretrain" else label_dict,
+                data_augmentation=True,
+                img_size=img_size,
+            )
     else:
         train_loader = None
 
     if os.path.isdir(test_dir):
-        test_loader = NiftiLoader(
-            mode="pretrain" if mode == "pretrain" else "train",
-            in_dir=test_dir,
-            label_dict=None if mode == "pretrain" else label_dict,
-            data_augmentation=False,
-            img_size=img_size,
-        )
+        if loader_type == "segmenter":
+            test_loader = SegmenterLoader(
+                in_dir=test_dir,
+                img_size=img_size,
+            )
+        else:
+            test_loader = NiftiLoader(
+                mode="pretrain" if mode == "pretrain" else "train",
+                in_dir=test_dir,
+                label_dict=None if mode == "pretrain" else label_dict,
+                data_augmentation=False,
+                img_size=img_size,
+            )
     else:
         test_loader = None
 
     if os.path.isdir(eval_dir):
-        eval_loader = NiftiLoader(
-            mode="inference",
-            in_dir=eval_dir,
-            label_dict=None if mode == "pretrain" else label_dict,
-            data_augmentation=False,
-            img_size=img_size,
-        )
+        if loader_type == "segmenter":
+            eval_loader = SegmenterLoader(
+                in_dir=eval_dir,
+                img_size=img_size,
+            )
+        else:
+            eval_loader = NiftiLoader(
+                mode="inference",
+                in_dir=eval_dir,
+                label_dict=None if mode == "pretrain" else label_dict,
+                data_augmentation=False,
+                img_size=img_size,
+            )
     else:
         eval_loader = None
 
