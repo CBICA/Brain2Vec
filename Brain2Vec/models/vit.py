@@ -74,7 +74,7 @@ class VisionTransformer(timm.models.vision_transformer.VisionTransformer):
 
 
 def vit_base_patch8(**kwargs: Any) -> nn.Module:
-    model = VisionTransformer(
+    return VisionTransformer(
         patch_size=8,
         embed_dim=768,
         depth=12,
@@ -84,11 +84,10 @@ def vit_base_patch8(**kwargs: Any) -> nn.Module:
         norm_layer=partial(nn.LayerNorm, eps=1e-6),
         **kwargs,
     )
-    return model
 
 
 def vit_large_patch8(**kwargs: Any) -> nn.Module:
-    model = VisionTransformer(
+    return VisionTransformer(
         patch_size=8,
         embed_dim=1024,
         depth=24,
@@ -98,11 +97,10 @@ def vit_large_patch8(**kwargs: Any) -> nn.Module:
         norm_layer=partial(nn.LayerNorm, eps=1e-6),
         **kwargs,
     )
-    return model
 
 
 def vit_huge_patch8(**kwargs: Any) -> nn.Module:
-    model = VisionTransformer(
+    return VisionTransformer(
         patch_size=8,
         embed_dim=1280,
         depth=32,
@@ -112,4 +110,3 @@ def vit_huge_patch8(**kwargs: Any) -> nn.Module:
         norm_layer=partial(nn.LayerNorm, eps=1e-6),
         **kwargs,
     )
-    return model
