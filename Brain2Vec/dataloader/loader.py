@@ -136,21 +136,24 @@ class SegmenterLoader(Dataset):
         self.in_dir = in_dir
         self.img_size = kwargs.get("img_size", (128, 128, 128))
         self.resize = tio.Resize(self.img_size)
-        self.data: list[list] = []
+        self.imgs: list = []
+        self.masks: list = []
         self._fetch_images()
 
     def _fetch_images(self) -> None:
         for fldr_name in os.listdir(self.in_dir):
-            curr_mrid = []
             for img_name in os.listdir(f"{self.in_dir}/{fldr_name}"):
-                curr_mrid.append(f"{self.in_dir}/{fldr_name}/{img_name}")
-            self.data.append(curr_mrid)
+                if "mask" in img_name:
+                    self.masks.append(f"{self.in_dir}/{fldr_name}/{img_name}")
+                else:
+                    self.imgs.append(f"{self.in_dir}/{fldr_name}/{img_name}")
 
     def __len__(self) -> int:
         return len(self.data)
 
     def __getitem__(self, index: int) -> Any:
-        img, mask = self.data[index]
+        img = self.imgs[index]
+        mask = self.masks[index]
 
         img, mask = tio.ScalarImage(img), tio.ScalarImage(mask)
         img, mask = self.resize(img), self.resize(mask)
