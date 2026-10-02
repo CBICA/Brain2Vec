@@ -129,9 +129,9 @@ class ViTSegmenter(Brain2Vec):
         x: torch.Tensor,
         target: torch.Tensor,
     ) -> torch.Tensor:
-        latent, _, ids_restore = self.forward_encoder(x)
+        latent, _, _ = self.forward_encoder(x)
 
-        pred = self.unpatchify_logits(self.forward_decoder(latent, ids_restore))
+        pred = self.unpatchify_logits(self.forward_decoder(latent))
         loss = self.forward_segmenter_loss(pred, target)
 
         return loss

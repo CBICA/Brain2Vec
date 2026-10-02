@@ -72,9 +72,9 @@ def available_models() -> dict:
         "vit_base": vit_base_patch8,
         "vit_large": vit_large_patch8,
         "vit_huge": vit_huge_patch8,
-        "brain2vec_segmenter_base": vit_segmenter_base_patch8_dec512d8b,
-        "brain2vec_segmenter_large": vit_segmenter_large_patch8_dec512d8b,
-        "brain2vec_segmenter_huge": vit_segmenter_huge_patch8_dec512d8b,
+        "segmenter_base": vit_segmenter_base_patch8_dec512d8b,
+        "segmenter_large": vit_segmenter_large_patch8_dec512d8b,
+        "segmenter_huge": vit_segmenter_huge_patch8_dec512d8b,
     }
 
 
@@ -676,6 +676,119 @@ def main() -> None:
 
     vit_finetune.add_argument("--distributed", action="store_true")
     vit_finetune.set_defaults(func=run_vit_finetune)
+
+    segmenter_trainer = subparsers.add_parser(
+        "segmenter_trainer", help="Select Segmenter trainer mode"
+    )
+    segmenter_trainer.add_argument(
+        "--img_size",
+        type=int,
+        default=128,
+        required=False,
+    )
+
+    segmenter_trainer.add_argument(
+        "--model",
+        type=str,
+        default="segmenter_base",
+        required=False,
+    )
+
+    segmenter_trainer.add_argument(
+        "--n_classes",
+        type=int,
+        required=True,
+    )
+
+    segmenter_trainer.add_argument(
+        "--in_dir",
+        type=str,
+        required=True,
+    )
+
+    segmenter_trainer.add_argument(
+        "--batch_size",
+        type=int,
+        default=32,
+        required=False,
+    )
+
+    segmenter_trainer.add_argument(
+        "--o",
+        "--out_dir",
+        type=str,
+        default=".",
+        required=False,
+    )
+
+    segmenter_trainer.add_argument(
+        "--model_name",
+        type=str,
+        default="vit_segmenter_best.pth",
+    )
+
+    segmenter_trainer.add_argument(
+        "-d",
+        "--device",
+        type=str,
+        default="cuda",
+        required=False,
+    )
+
+    segmenter_trainer.add_argument(
+        "--lr",
+        type=float,
+        default=0.01,
+        required=False,
+    )
+
+    segmenter_trainer.add_argument(
+        "--weight_decay",
+        type=float,
+        default=0.0,
+        required=False,
+    )
+
+    segmenter_trainer.add_argument(
+        "--epochs",
+        type=int,
+        default=200,
+        required=False,
+    )
+
+    segmenter_trainer.add_argument(
+        "--patience",
+        type=int,
+        default=10,
+        required=False,
+    )
+
+    segmenter_trainer.add_argument(
+        "--optimizer",
+        type=str,
+        default="Adadelta",
+        required=False,
+    )
+
+    segmenter_trainer.add_argument(
+        "--accum_iter",
+        type=int,
+        default=1,
+        required=False,
+    )
+
+    segmenter_trainer.add_argument(
+        "--verbose",
+        action="store_true",
+    )
+
+    segmenter_trainer.add_argument(
+        "--dist_url",
+        default="env://",
+    )
+
+    segmenter_trainer.add_argument("--distributed", action="store_true")
+    segmenter_trainer.set_defaults(func=run_segmenter_trainer)
 
     args = parser.parse_args()
     args.func(args)
