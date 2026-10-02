@@ -100,7 +100,6 @@ class ViTSegmenter(Brain2Vec):
     def forward_decoder(
         self,
         x: torch.Tensor,
-        ids_restore: torch.Tensor,
     ) -> torch.Tensor:
         x = self.decoder_embed(x) + self.decoder_pos_embed
 
@@ -125,7 +124,7 @@ class ViTSegmenter(Brain2Vec):
 
         return ce_loss + _dice_loss
 
-    def forward_segmenter(
+    def forward(
         self,
         x: torch.Tensor,
         target: torch.Tensor,

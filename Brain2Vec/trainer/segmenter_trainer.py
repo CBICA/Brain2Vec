@@ -28,7 +28,7 @@ def train_step(
         X, mask = X.float(), mask.float()
 
         with torch.autocast(device_type="cuda", dtype=torch.bfloat16):
-            loss = model.forward_segmenter(X, mask)
+            loss = model.forward(X, mask)
 
         loss_value = loss.item()
         loss /= accum_iter
@@ -71,7 +71,7 @@ def test_step(
             )
 
             with torch.autocast(device_type="cuda", dtype=torch.bfloat16):
-                loss = model.forward_segmenter(X, mask)
+                loss = model.forward(X, mask)
 
             test_loss += loss.item()
 
