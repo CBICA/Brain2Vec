@@ -11,44 +11,68 @@ from Brain2Vec.models.brain2vec import Brain2Vec
 def dice_coeff(
     input: torch.Tensor,
     target: torch.Tensor,
-    reduce_batch_first: bool = False,
     epsilon: float = 1e-6,
 ) -> torch.Tensor:
-    assert input.size() == target.size()
-    assert input.dim() == 3 or not reduce_batch_first
+    assert input.shape == target.shape, (
+        f"Dice input/target shape mismatch: " f"{input.shape} vs {target.shape}"
+    )
 
-    sum_dim = (-1, -2) if input.dim() == 2 or not reduce_batch_first else (-1, -2, -3)
+    intersection = (input * target).sum(dim=(2, 3, 4))
 
-    inter = 2 * (input * target).sum(dim=sum_dim)
-    sets_sum = input.sum(dim=sum_dim) + target.sum(dim=sum_dim)
-    sets_sum = torch.where(sets_sum == 0, inter, sets_sum)
+    input_sum = input.sum(dim=(2, 3, 4))
+    target_sum = target.sum(dim=(2, 3, 4))
 
-    dice = (inter + epsilon) / (sets_sum + epsilon)
+    dice = (2.0 * intersection + epsilon) / (input_sum + target_sum + epsilon)
+
     return dice.mean()
 
 
 def multiclass_dice_coeff(
     input: torch.Tensor,
     target: torch.Tensor,
-    reduce_batch_first: bool = False,
     epsilon: float = 1e-6,
 ) -> torch.Tensor:
+
     return dice_coeff(
-        input.flatten(0, 1), target.flatten(0, 1), reduce_batch_first, epsilon
+        input,
+        target,
+        epsilon=epsilon,
     )
 
 
 def dice_loss(
-    input: torch.Tensor, target: torch.Tensor, multiclass: bool = False
+    input: torch.Tensor,
+    target: torch.Tensor,
+    multiclass: bool = False,
 ) -> torch.Tensor:
-    fn = multiclass_dice_coeff if multiclass else dice_coeff
-    return 1 - fn(input, target, reduce_batch_first=True)
+    if multiclass:
+        return 1.0 - multiclass_dice_coeff(input, target)
+
+    return 1.0 - dice_coeff(input, target)
 
 
 class ViTSegmenter(Brain2Vec):
     def __init__(self, n_classes: int, **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self.n_classes = n_classes
+        decoder_embed_dim: int = kwargs.get("decoder_embed_dim", 512)
+        patch_size: int = kwargs.get("patch_size", 8)
+        self.decoder_pred = nn.Linear(
+            decoder_embed_dim, patch_size**3 * n_classes, bias=True
+        )
+
+    def unpatchify_logits(self, x: torch.Tensor) -> torch.Tensor:
+        B, L, _ = x.shape
+        ph, pw, pd = self.patch_embed.patch_size
+        C = self.n_classes
+
+        g = round(L ** (1 / 3))
+        assert g**3 == L, f"Number of patches {L} is not a perfect cube"
+
+        x = x.reshape(B, g, g, g, ph, pw, pd, C)
+        x = torch.einsum("bdhwpqrc->bcdphqwr", x)
+
+        return x.reshape(B, C, g * ph, g * pw, g * pd)
 
     def forward_encoder(
         self,
@@ -78,24 +102,11 @@ class ViTSegmenter(Brain2Vec):
         x: torch.Tensor,
         ids_restore: torch.Tensor,
     ) -> torch.Tensor:
-        mask_tokens = self.mask_token.repeat(
-            x.shape[0], ids_restore.shape[1] + 1 - x.shape[1], 1
-        )
-        x_ = torch.cat([x[:, 1:, :], mask_tokens], dim=1)
-        x_ = torch.gather(
-            x_, dim=1, index=ids_restore.unsqueeze(-1).repeat(1, 1, x.shape[2])
-        )
-        x = torch.cat([x[:, :1, :], x_], dim=1)
-
-        x = x + self.decoder_pos_embed
+        x = self.decoder_embed(x) + self.decoder_pos_embed
 
         for blk in self.decoder_blocks:
             x = blk(x)
-        x = self.decoder_norm(x)
-
-        x = self.decoder_pred(x)
-
-        x = x[:, 1:, :]
+        x = self.decoder_pred(x)[:, 1:, :]
 
         return x
 
@@ -104,35 +115,25 @@ class ViTSegmenter(Brain2Vec):
         pred: torch.Tensor,
         target: torch.Tensor,
     ) -> torch.Tensor:
-        assert pred.shape == target.shape, "Prediction shape != Target shape"
-        target = self.patchify(target)
+        ce_loss = F.cross_entropy(pred, target.squeeze(0))
 
-        print(f"One hot shape: {(F.one_hot(target, self.n_classes)).shape}")
-
-        ce_loss = F.cross_entropy(pred, target)
         _dice_loss = dice_loss(
             F.softmax(pred, dim=1).float(),
-            F.one_hot(target, self.n_classes).float(),
+            F.one_hot(target, self.n_classes).squeeze(0).permute(0, 4, 1, 2, 3).float(),
             multiclass=True,
         )
 
         return ce_loss + _dice_loss
 
-    def forward(
+    def forward_segmenter(
         self,
         x: torch.Tensor,
-        masking_type: str = "random",
-        ground_truth: Optional[torch.Tensor] = None,
-        mask_ratio: float = 0.0,
+        target: torch.Tensor,
     ) -> torch.Tensor:
-
-        assert masking_type == "random"
-        assert ground_truth is None
-        assert mask_ratio == 0.0
-
         latent, _, ids_restore = self.forward_encoder(x)
-        pred = self.forward_decoder(latent, ids_restore)
-        loss = self.forward_segmenter_loss(pred, x)
+
+        pred = self.unpatchify_logits(self.forward_decoder(latent, ids_restore))
+        loss = self.forward_segmenter_loss(pred, target)
 
         return loss
 
