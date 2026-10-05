@@ -139,6 +139,7 @@ class SegmenterLoader(Dataset):
         self.imgs: list = []
         self.masks: list = []
         self._fetch_images()
+        assert len(self.imgs) == len(self.masks)
 
     def _fetch_images(self) -> None:
         for fldr_name in os.listdir(self.in_dir):
@@ -149,18 +150,19 @@ class SegmenterLoader(Dataset):
                     self.imgs.append(f"{self.in_dir}/{fldr_name}/{img_name}")
 
     def __len__(self) -> int:
-        return len(self.data)
+        return len(self.imgs)
 
     def __getitem__(self, index: int) -> Any:
         img = self.imgs[index]
         mask = self.masks[index]
 
-        img, mask = tio.ScalarImage(img), tio.ScalarImage(mask)
+        img, mask = tio.ScalarImage(img), tio.LabelMap(mask)
         img, mask = self.resize(img), self.resize(mask)
 
         img_tensor, mask_tensor = torch.tensor(
             img.data, dtype=torch.float32
-        ), torch.tensor(mask.data, dtype=torch.float32)
+        ), torch.tensor(mask.data, dtype=torch.long)
+        print(f"Unique mask values: {len(torch.unique(mask_tensor.long()))}")
         return img_tensor, mask_tensor
 
 

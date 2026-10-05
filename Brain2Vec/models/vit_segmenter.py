@@ -114,7 +114,9 @@ class ViTSegmenter(Brain2Vec):
         pred: torch.Tensor,
         target: torch.Tensor,
     ) -> torch.Tensor:
-        ce_loss = F.cross_entropy(pred, target.squeeze(0))
+        target = target.squeeze(1)
+        
+        ce_loss = F.cross_entropy(pred, target)
 
         _dice_loss = dice_loss(
             F.softmax(pred, dim=1).float(),

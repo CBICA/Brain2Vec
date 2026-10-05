@@ -28,7 +28,7 @@ from Brain2Vec.models.vit_segmenter import (
     vit_segmenter_large_patch8_dec512d8b,
 )
 from Brain2Vec.trainer.brain2vec_pretrain import train as brain2vec_pretrain
-from Brain2Vec.trainer.segmenter_trainer import train as segmenter_trainer
+from Brain2Vec.trainer.segmenter_trainer import train as segmenter_train
 from Brain2Vec.trainer.utils import init_distributed_mode
 from Brain2Vec.trainer.vit_finetune import train as vit_finetune
 
@@ -337,7 +337,7 @@ def run_segmenter_trainer(args: Any) -> None:
         distributed=args.distributed,
         num_tasks=num_tasks if args.distributed else None,
         global_rank=global_rank if args.distributed else None,
-        img_size=(int(args.ims_size),) * 3,
+        img_size=(int(args.img_size),) * 3,
     )
 
     eff_batch_size = args.batch_size * args.world_size
@@ -362,7 +362,7 @@ def run_segmenter_trainer(args: Any) -> None:
         weight_decay=args.weight_decay,
     )
 
-    _ = segmenter_trainer(
+    _ = segmenter_train(
         model=model,
         model_without_ddp=model_without_ddp,
         distributed=args.distributed,
@@ -373,7 +373,7 @@ def run_segmenter_trainer(args: Any) -> None:
         patience=args.patience,
         accum_iter=args.accum_iter,
         device=args.device,
-        target_dir=args.out_dir,
+        target_dir=".",
         model_name=args.model_name,
         verbose=args.verbose,
     )

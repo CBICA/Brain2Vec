@@ -25,7 +25,6 @@ def train_step(
 
     for data_iter_step, (X, mask) in enumerate(dataloader):
         X, mask = X.to(device, non_blocking=True), mask.to(device, non_blocking=True)
-        X, mask = X.float(), mask.float()
 
         with torch.autocast(device_type="cuda", dtype=torch.bfloat16):
             loss = model.forward(X, mask)
