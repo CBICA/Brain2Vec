@@ -29,7 +29,7 @@ from Brain2Vec.models.vit_segmenter import (
 )
 from Brain2Vec.trainer.brain2vec_pretrain import train as brain2vec_pretrain
 from Brain2Vec.trainer.segmenter_trainer import train as segmenter_train
-from Brain2Vec.trainer.utils import init_distributed_mode
+from Brain2Vec.trainer.utils import init_distributed_mode, load_weights
 from Brain2Vec.trainer.vit_finetune import train as vit_finetune
 
 
@@ -318,6 +318,10 @@ def run_segmenter_trainer(args: Any) -> None:
     model = avail_models[args.model](
         img_size=args.img_size, n_classes=args.n_classes
     ).to(args.device)
+
+    if len(args.pretrain) > 0:
+        load_weights(model, args.pretrain, args.device)
+
     if args.distributed:
         torch.cuda.set_device(args.gpu)
         model = model.cuda(args.gpu)
@@ -725,6 +729,13 @@ def main() -> None:
         "--model_name",
         type=str,
         default="vit_segmenter_best.pth",
+    )
+
+    segmenter_trainer.add_argument(
+        "--pretrain",
+        type=str,
+        default="",
+        required=False,
     )
 
     segmenter_trainer.add_argument(
