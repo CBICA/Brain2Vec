@@ -10,6 +10,7 @@ import json
 import os
 from typing import Any
 
+import nibabel as nib
 import pandas as pd
 import torch
 from torch.utils.data import DataLoader
@@ -22,6 +23,11 @@ from Brain2Vec.models.brain2vec import (
 )
 from Brain2Vec.models.utils import load_brain2vec
 from Brain2Vec.models.vit import vit_base_patch8, vit_huge_patch8, vit_large_patch8
+from Brain2Vec.models.vit_segmenter import (
+    vit_segmenter_base_patch8_dec512d8b,
+    vit_segmenter_huge_patch8_dec512d8b,
+    vit_segmenter_large_patch8_dec512d8b,
+)
 from Brain2Vec.trainer.utils import load_weights
 
 
@@ -38,6 +44,14 @@ def vit_models() -> dict:
         "vit_base": vit_base_patch8,
         "vit_large": vit_large_patch8,
         "vit_huge": vit_huge_patch8,
+    }
+
+
+def segmenter_models() -> dict:
+    return {
+        "segmenter_base": vit_segmenter_base_patch8_dec512d8b,
+        "segmenter_large": vit_segmenter_large_patch8_dec512d8b,
+        "segmenter_huge": vit_segmenter_huge_patch8_dec512d8b,
     }
 
 
@@ -88,8 +102,8 @@ def run_brain2vec_inference(args: Any) -> None:
         with torch.autocast(device_type=args.device):
             features, _, _ = model.forward_encoder(imgs, mask_ratio=0.0)
             features = features[:, 0, :].float()
-            for i in range(len(mrids)):
-                out_features[mrids[i]] = features[i].cpu().tolist()
+        for i in range(len(mrids)):
+            out_features[mrids[i]] = features[i].cpu().tolist()
 
     with open(args.out_json, "w") as f:
         json.dump(out_features, f)
@@ -170,6 +184,38 @@ def run_vit_inference(args: Any) -> None:
 
     inference_res.to_csv(args.out_csv, index=False)
     print(f"Inference results saved to {args.out_csv} successfully!")
+
+
+@torch.no_grad()
+def run_segmenter_inference(args: Any) -> None:
+    """
+    For now, segmenter weights are not published on hugging face.
+    This function only support pth weight loading.
+    """
+    torch.manual_seed(42)
+    if args.device == "cuda":
+        torch.cuda.manual_seed(42)
+
+    model_class = segmenter_models()[args.model]
+    model = model_class(img_size=args.img_size, n_classes=args.num_classes)
+    load_weights(model, args.model_weights, args.device)
+
+    dataloader = test_dataloader(args.in_dir)
+
+    model.eval()
+
+    for _, (imgs, mrids) in enumerate(dataloader):
+        imgs = imgs.to(args.device)
+
+        with torch.autocast(device_type=args.device):
+            pred = model.predict(imgs).squeeze(0)
+
+        for mrid in mrids:
+            orig_img = nib.load(f"{args.in_dir}/{mrid}")
+            pred_mask = nib.Nifti1Image(
+                pred.cpu().numpy(), affine=orig_img.affine, header=orig_img.header
+            )
+            nib.save(pred_mask, f"{args.out_dir}/{mrid[:-6]}_mask.nii.gz")
 
 
 def main() -> None:
@@ -266,7 +312,7 @@ def main() -> None:
         type=str,
         required=False,
         default="",
-        help="Path to brain2vec model weights",
+        help="Path to model weights",
     )
 
     vit_inference.add_argument(
@@ -299,6 +345,62 @@ def main() -> None:
         help="Either cuda, cpu or mps. Note that mps do not support some ops",
     )
     vit_inference.set_defaults(func=run_vit_inference)
+
+    segmenter_inference = subparsers.add_parser(
+        "segmenter_inference", help="Select ViT segmenter inference."
+    )
+
+    segmenter_inference.add_argument(
+        "--model",
+        type=str,
+        required=True,
+        help="Either vit_base, vit_large or vit_huge",
+    )
+
+    segmenter_inference.add_argument(
+        "--img_size",
+        type=int,
+        required=True,
+        help="Image input size. We usually resize to (128, 128, 128) so --img_size=128",
+    )
+
+    segmenter_inference.add_argument(
+        "--num_classes",
+        type=int,
+        required=True,
+        help="Number of classes the segmenter predicts.",
+    )
+
+    segmenter_inference.add_argument(
+        "--model_weights",
+        type=str,
+        required=False,
+        default="",
+        help="Path to model weights",
+    )
+
+    segmenter_inference.add_argument(
+        "--in_dir",
+        type=str,
+        required=True,
+        help="Input directory with niftii images to perform inference on",
+    )
+
+    segmenter_inference.add_argument(
+        "--out_dir",
+        type=str,
+        required=True,
+        help="Directory where the output masks will be saved.",
+    )
+
+    segmenter_inference.add_argument(
+        "--device",
+        type=str,
+        default="cuda",
+        required=False,
+        help="Either cuda, cpu or mps. Note that mps do not support some ops",
+    )
+    segmenter_inference.set_defaults(func=run_segmenter_inference)
 
     args = parser.parse_args()
     args.func(args)

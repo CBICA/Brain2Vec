@@ -115,7 +115,7 @@ class ViTSegmenter(Brain2Vec):
         target: torch.Tensor,
     ) -> torch.Tensor:
         target = target.squeeze(1)
-        
+
         ce_loss = F.cross_entropy(pred, target)
 
         _dice_loss = dice_loss(
@@ -125,6 +125,14 @@ class ViTSegmenter(Brain2Vec):
         )
 
         return ce_loss + _dice_loss
+
+    def predict(
+        self,
+        x: torch.Tensor,
+    ) -> torch.Tensor:
+        latent, _, _ = self.forward_encoder(x)
+        pred = self.unpatchify_logits(self.forward_decoder(latent))
+        return pred.argmax(dim=1)
 
     def forward(
         self,
