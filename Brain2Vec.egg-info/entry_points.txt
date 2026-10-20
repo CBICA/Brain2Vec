@@ -1,4 +1,0 @@
-[console_scripts]
-Brain2Vec = Brain2Vec.__main__:main
-inference = inference:main
-svm_train = train_svm:main
