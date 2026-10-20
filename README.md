@@ -71,9 +71,9 @@ If you use our model, make sure to cite our work:
 ```
 
 ## Installation
-Brain2Vec exists as a PyPI package and can be installed using pip
+You can install Brain2Vec locally using pip
 ```bash
-pip install Brain2Vec
+pip install -e .
 ```
 
 ## Brain2Vec pre-training
