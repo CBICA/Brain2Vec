@@ -7,7 +7,7 @@
 
 </div>
 
-Code for the [Brain2Vec]() paper, a 3D foundation model pre-trained on 74,425
+Code for the [Brain2Vec](https://arxiv.org/abs/2610.28411) paper, a 3D foundation model pre-trained on 74,425
 T1-weighted brain MRI scans. In this repo, you can pre-train your own brain2vec
 model, fine-tune a Vision Transformer (ViT) using our pre-trained brain2vec
 encoder, train your own downstream ML models using brain2vec output embeddings
