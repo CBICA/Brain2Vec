@@ -58,7 +58,7 @@ region-specific effects on the reconstructed anatomy.
 
   ```bash
   NiChart_DLMUSE -i {dir with nifti files} -o ... --refaced-data
-  flirt -i {DLICV aligned output} -ref registration/img_template.nii.gz -o ...
+  flirt -i {s3_masked NiChart_DLMUSE output} -ref registration/img_template.nii.gz -o ...
   ```
 
 If you use our model, make sure to cite our work:
