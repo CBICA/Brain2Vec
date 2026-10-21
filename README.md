@@ -53,7 +53,8 @@ region-specific effects on the reconstructed anatomy.
   skull-stripped and linearly registered to a common atlas space. We use
   [NiChart\_DLMUSE](https://github.com/CBICA/NiChart_DLMUSE) for skull-stripping (DLICV folder)
   and [flirt](https://fsl.fmrib.ox.ac.uk/fsl/docs/registration/flirt/index.html)
-  for registration.
+  for registration, though you can use a different model for skull-stripping and
+  achieve comparable results.
 
   ```bash
   NiChart_DLMUSE -i {dir with nifti files} -o ... --refaced_data
