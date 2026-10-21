@@ -57,7 +57,7 @@ region-specific effects on the reconstructed anatomy.
   achieve comparable results.
 
   ```bash
-  NiChart_DLMUSE -i {dir with nifti files} -o ... --refaced_data
+  NiChart_DLMUSE -i {dir with nifti files} -o ... --refaced-data
   flirt -i {DLICV aligned output} -ref registration/img_template.nii.gz -o ...
   ```
 
