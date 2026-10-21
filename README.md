@@ -2,12 +2,12 @@
 
 <div align="center">
 
-[![arXiv](https://img.shields.io/badge/arXiv-XXXX.XXXXX-b31b1b.svg)]()
+[![arXiv](https://img.shields.io/badge/arXiv-2610.28411-b31b1b.svg)](https://arxiv.org/abs/2610.28411)
 [![HuggingFace](https://img.shields.io/badge/🤗%20Hugging%20Face-Model-yellow)](https://huggingface.co/cbica/Brain2Vec)
 
 </div>
 
-Code for the [Brain2Vec]() paper, a 3D foundation model pre-trained on 74,425
+Code for the [Brain2Vec](https://arxiv.org/abs/2610.28411) paper, a 3D foundation model pre-trained on 74,425
 T1-weighted brain MRI scans. In this repo, you can pre-train your own brain2vec
 model, fine-tune a Vision Transformer (ViT) using our pre-trained brain2vec
 encoder, train your own downstream ML models using brain2vec output embeddings
@@ -53,27 +53,31 @@ region-specific effects on the reconstructed anatomy.
   skull-stripped and linearly registered to a common atlas space. We use
   [NiChart\_DLMUSE](https://github.com/CBICA/NiChart_DLMUSE) for skull-stripping (DLICV folder)
   and [flirt](https://fsl.fmrib.ox.ac.uk/fsl/docs/registration/flirt/index.html)
-  for registration.
+  for registration, though you can use a different model for skull-stripping and
+  achieve comparable results.
 
   ```bash
-  NiChart_DLMUSE -i {dir with nifti files} -o ... ---refaced_data
-  flirt -i {DLICV aligned output} -ref img_template.nii.gz -o ...
+  NiChart_DLMUSE -i {dir with nifti files} -o ... --refaced_data
+  flirt -i {DLICV aligned output} -ref registration/img_template.nii.gz -o ...
   ```
 
 If you use our model, make sure to cite our work:
 ```
-@Article{Brain2Vec2026,
-  author  = {Spiros Maggioros and Guray Erus and Gareth Harman and George Aidinis},
-  journal = {arXiv:},
-  title   = {Brain2Vec: A Self-Supervised 3D Foundation Model for Structural Brain MRI},
-  year    = {2026},
+@misc{maggioros2026brain2vecselfsupervised3dfoundation,
+      title={Brain2Vec: A Self-Supervised 3D Foundation Model for Structural Brain MRI}, 
+      author={Spiros Maggioros and Guray Erus and Gareth Harman and George Aidinis and Alexander Getka and Aristeidis Sotiras and Christos Davatzikos},
+      year={2026},
+      eprint={2610.28411},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV},
+      url={https://arxiv.org/abs/2610.28411}, 
 }
 ```
 
 ## Installation
-Brain2Vec exists as a PyPI package and can be installed using pip
+You can install Brain2Vec locally using pip
 ```bash
-pip install Brain2Vec
+pip install -e .
 ```
 
 ## Brain2Vec pre-training
