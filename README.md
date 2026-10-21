@@ -2,7 +2,7 @@
 
 <div align="center">
 
-[![arXiv](https://img.shields.io/badge/arXiv-XXXX.XXXXX-b31b1b.svg)]()
+[![arXiv](https://img.shields.io/badge/arXiv-XXXX.XXXXX-b31b1b.svg)](https://arxiv.org/abs/2610.28411)
 [![HuggingFace](https://img.shields.io/badge/🤗%20Hugging%20Face-Model-yellow)](https://huggingface.co/cbica/Brain2Vec)
 
 </div>
