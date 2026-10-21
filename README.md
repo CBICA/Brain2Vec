@@ -63,11 +63,14 @@ region-specific effects on the reconstructed anatomy.
 
 If you use our model, make sure to cite our work:
 ```
-@Article{Brain2Vec2026,
-  author  = {Spiros Maggioros and Guray Erus and Gareth Harman and George Aidinis},
-  journal = {arXiv:},
-  title   = {Brain2Vec: A Self-Supervised 3D Foundation Model for Structural Brain MRI},
-  year    = {2026},
+@misc{maggioros2026brain2vecselfsupervised3dfoundation,
+      title={Brain2Vec: A Self-Supervised 3D Foundation Model for Structural Brain MRI}, 
+      author={Spiros Maggioros and Guray Erus and Gareth Harman and George Aidinis and Alexander Getka and Aristeidis Sotiras and Christos Davatzikos},
+      year={2026},
+      eprint={2610.28411},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV},
+      url={https://arxiv.org/abs/2610.28411}, 
 }
 ```
 
