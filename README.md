@@ -16,6 +16,8 @@ classification models trained on brain2vec embeddings.
 
 > [!IMPORTANT]
 > To use our model, you need to apply for access to our [hugging face model card](https://huggingface.co/cbica/Brain2Vec). Otherwise, you can directly use Brain2Vec on [NiChart](https://neuroimagingchart.com).
+> We follow a 2-step preprocessing with skull-stripping and linear registration.
+> Please make sure to follow the steps [here](#pre-processing).
 
 ![self-attention](assets/self_attention.png)
 ![brain2vec-example](assets/brain2vec_example.png)
@@ -49,30 +51,19 @@ region-specific effects on the reconstructed anatomy.
 
 * You can use Brain2Vec -- for both feature extraction and disease classification/brain age regression -- on [NiChart](https://cloud.neuroimagingchart.com) by simply dragging and dropping your NIfTI files. **No GPU or installation required**.
 
-* Before using any of our models locally, make sure that the input is
-  skull-stripped and linearly registered to a common atlas space. We use
-  [NiChart\_DLMUSE](https://github.com/CBICA/NiChart_DLMUSE) for skull-stripping (DLICV folder)
-  and [flirt](https://fsl.fmrib.ox.ac.uk/fsl/docs/registration/flirt/index.html)
-  for registration, though you can use a different model for skull-stripping and
-  achieve comparable results.
+
+## Pre-processing
+Before using any of our models locally, make sure that the input is
+skull-stripped and linearly registered to a common atlas space. We use
+[NiChart\_DLMUSE](https://github.com/CBICA/NiChart_DLMUSE) for skull-stripping (DLICV folder)
+and [flirt](https://fsl.fmrib.ox.ac.uk/fsl/docs/registration/flirt/index.html)
+for registration, though you can use any skull-stripping model and
+achieve comparable results.
 
   ```bash
   NiChart_DLMUSE -i {dir with nifti files} -o ... --refaced-data
   flirt -i {s3_masked NiChart_DLMUSE output} -ref registration/img_template.nii.gz -o ...
   ```
-
-If you use our model, make sure to cite our work:
-```
-@misc{maggioros2026brain2vecselfsupervised3dfoundation,
-      title={Brain2Vec: A Self-Supervised 3D Foundation Model for Structural Brain MRI}, 
-      author={Spiros Maggioros and Guray Erus and Gareth Harman and George Aidinis and Alexander Getka and Aristeidis Sotiras and Christos Davatzikos},
-      year={2026},
-      eprint={2610.28411},
-      archivePrefix={arXiv},
-      primaryClass={cs.CV},
-      url={https://arxiv.org/abs/2610.28411}, 
-}
-```
 
 ## Installation
 You can install Brain2Vec locally using pip
@@ -170,4 +161,18 @@ python train_svm.py dx_classification --cn_embeddings "path to your CN embedding
 
 python train_svm.py ba_regression --embeddings "path to your embeddings" \
                                   --label_dict "path to a CSV that contains MRID and Age columns"
+```
+
+## Citation
+If you use our model, make sure to cite our work:
+```
+@misc{maggioros2026brain2vecselfsupervised3dfoundation,
+      title={Brain2Vec: A Self-Supervised 3D Foundation Model for Structural Brain MRI},
+      author={Spiros Maggioros and Guray Erus and Gareth Harman and George Aidinis and Alexander Getka and Aristeidis Sotiras and Christos Davatzikos},
+      year={2026},
+      eprint={2610.28411},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV},
+      url={https://arxiv.org/abs/2610.28411},
+}
 ```
