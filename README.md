@@ -49,8 +49,6 @@ region-specific effects on the reconstructed anatomy.
 
 * Vision Transformers implementation follows the code of [timm](https://github.com/huggingface/pytorch-image-models) from huggingface.
 
-* You can use Brain2Vec -- for both feature extraction and disease classification/brain age regression -- on [NiChart](https://cloud.neuroimagingchart.com) by simply dragging and dropping your NIfTI files. **No GPU or installation required**.
-
 
 ## Pre-processing
 Before using any of our models locally, make sure that the input is
@@ -64,6 +62,8 @@ achieve comparable results.
   NiChart_DLMUSE -i {dir with nifti files} -o ... --refaced-data
   flirt -i {s3_masked NiChart_DLMUSE output} -ref registration/img_template.nii.gz -o ...
   ```
+You can use Brain2Vec for both feature extraction and disease/risk-factor classification or brain age prediction
+on [NiChart](https://cloud.neuroimagingchart.com) by simply dragging and dropping your NIfTI files, **we perform pre-processing for you, also no GPU or installation required**.
 
 ## Installation
 You can install Brain2Vec locally using pip
