@@ -184,3 +184,8 @@ If you use our model, make sure to cite our work:
       url={https://arxiv.org/abs/2610.28411},
 }
 ```
+
+## Contributions
+
+We are open to any contributions about code organization, inference efficiency
+and quality, fixes, etc. Just open a PR with a full explanation of your code.
