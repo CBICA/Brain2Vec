@@ -56,7 +56,11 @@ def train_step(
         if (data_iter_step + 1) % accum_iter == 0:
             optimizer.zero_grad()
 
-        torch.cuda.synchronize()
+        if device == "cuda":
+            torch.cuda.synchronize()
+        else:
+            torch.cpu.synchronize()
+        # MPS not capable of 3D ops
 
         loss_value_reduce = all_reduce_mean(loss_value) if distributed else loss_value
         if (data_iter_step + 1) % accum_iter == 0:
