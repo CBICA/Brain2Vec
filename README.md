@@ -15,9 +15,13 @@ or perform downstream classification inference using our pre-trained disease
 classification models trained on brain2vec embeddings.
 
 > [!IMPORTANT]
-> To use our model, you need to apply for access to our [hugging face model card](https://huggingface.co/cbica/Brain2Vec). Otherwise, you can directly use Brain2Vec on [NiChart](https://neuroimagingchart.com).
-> We follow a 2-step preprocessing with skull-stripping and linear registration.
-> Please make sure to follow the steps [here](#pre-processing).
+> To use our model locally, you first need to apply for access to our [hugging face model card](https://huggingface.co/cbica/Brain2Vec). 
+> We follow a 2-step preprocessing with skull-stripping and linear registration,
+> make sure to follow the steps [here](#pre-processing). **Don't perform inference on raw images locally**.
+> You can always use Brain2Vec on [NiChart](https://neuroimagingchart.com) where
+> you can upload your raw T1w MRI scans via cloud and obtain Brain2Vec
+> scores **without preprocessing steps, installation or specialized
+> infastructure (GPU)**.
 
 ![self-attention](assets/self_attention.png)
 ![brain2vec-example](assets/brain2vec_example.png)
