@@ -83,10 +83,12 @@ srun Brain2Vec brain2vec_pretrain --img_size 128 \
                          --masking_type random \
                          --mask_ratio 0.75 \
                          --model brain2vec_base \
-                         --in_dir "input_dir/"
+                         --in_dir "input directory with train/test/eval
+                         subdirectories" \
                          --batch_size 32 \
-                         --out_dir "output_dir/" \
-                         --model_name "model name(.pth)" \
+                         --out_dir "directory where the model will be
+                         saved" \
+                         --model_name "model name (.pth)" \
                          --device cuda \
                          --lr 0.001 \
                          --weight_decay 0.05 \
@@ -113,9 +115,11 @@ srun Brain2Vec vit_finetune --img_size 128 \
                          --target "target column" \
                          --pretrain "brain2vec.safetensors (model name from our
                          hugging face)" \
-                         --in_dir "input_dir/"
+                         --in_dir "input directory with train/test/eval
+                         subdirectories" \
                          --batch_size 32 \
-                         --out_dir "output_dir/" \
+                         --out_dir "directory where the model will be
+                         saved" \
                          --model_name "model name (.pth)" \
                          --device cuda \
                          --lr 0.001 \
@@ -137,7 +141,7 @@ classifiers, such as SVM or MLP models.
 ```bash
 python inference.py brain2vec_inference --model brain2vec_base \
                                     --img_size 128 \
-                                    --in_dir "path to directory with niftii scans" \
+                                    --in_dir "path to directory with nifti scans" \
                                     --out_json "name of json file with output embeddings" \
                                     --device cuda
 
@@ -145,8 +149,8 @@ python inference.py vit_inference --model vit_base \
                                 --num_classes 1 \
                                 --img_size 128 \
                                 --mode regression \
-                                --in_dir "input directory with niftii scans" \
-                                --out_csv "output csv file with predictions" \
+                                --in_dir "path to directory with nifti scans" \
+                                --out_csv "output CSV file with predictions" \
                                 --device cuda
 ```
 
@@ -156,10 +160,10 @@ We provide a simple pipeline that enable users to train their own ML models
 using output embeddings from Brain2Vec.
 
 ```bash
-python train_svm.py dx_classification --cn_embeddings "path to your CN embeddings" \
-                                      --dx_embeddings "path to your DX embeddings"
+python train_svm.py dx_classification --cn_embeddings "path to your CN embeddings (.json)" \
+                                      --dx_embeddings "path to your DX embeddings (.json)"
 
-python train_svm.py ba_regression --embeddings "path to your embeddings" \
+python train_svm.py ba_regression --embeddings "path to your embeddings (.json)" \
                                   --label_dict "path to a CSV that contains MRID and Age columns"
 ```
 
