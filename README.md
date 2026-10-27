@@ -66,6 +66,11 @@ achieve comparable results.
   NiChart_DLMUSE -i {dir with nifti files} -o ... --refaced-data
   flirt -in {s3_masked NiChart_DLMUSE output} -ref registration/img_template.nii.gz -out ...
   ```
+
+To validate your pre-processing, you can perform inference on a simple raw scan on 
+NiChart and then compare it to your local inference. If the embeddings are 99% similar,
+then your pre-processing was correct.
+
 You can use Brain2Vec for both feature extraction and disease/risk-factor classification or brain age prediction
 on [NiChart](https://cloud.neuroimagingchart.com) by simply dragging and dropping your NIfTI files, **we perform pre-processing for you, also no GPU or installation required**.
 
