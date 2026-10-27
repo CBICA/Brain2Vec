@@ -14,8 +14,10 @@ import numpy as np
 import pandas as pd
 import torch
 import torchio as tio
-from torch.utils.data import DataLoader, Dataset
+from torch.utils.data import Dataset
 from typing_extensions import Literal
+
+from Brain2Vec.dataloader.utils import create_loader
 
 
 class NiftiLoader(Dataset):
@@ -192,99 +194,31 @@ def create_dataloaders(
     else:
         eval_loader = None
 
-    if train_loader is not None:
-        if distributed:
-            assert num_tasks is not None
-            assert global_rank is not None
-            train_sampler = torch.utils.data.DistributedSampler(
-                train_loader,
-                num_replicas=num_tasks,
-                rank=global_rank,
-                shuffle=True,
-            )
-            train_dataloader = DataLoader(
-                train_loader,
-                sampler=train_sampler,
-                batch_size=batch_size,
-                num_workers=os.cpu_count() // 4,  # type: ignore
-                prefetch_factor=2,
-                pin_memory=torch.cuda.is_available(),
-                persistent_workers=True,
-            )
-        else:
-            train_dataloader = DataLoader(
-                train_loader,
-                batch_size=batch_size,
-                shuffle=True,
-                num_workers=os.cpu_count() // 4,  # type: ignore
-                collate_fn=lambda x: torch.utils.data.dataloader.default_collate(x),
-                prefetch_factor=2,
-                pin_memory=torch.cuda.is_available(),
-                persistent_workers=True,
-            )
-    else:
-        train_dataloader = None
+    train_dataloader = create_loader(
+        loader=train_loader,
+        batch_size=batch_size,
+        shuffle=True,
+        distributed=distributed,
+        num_tasks=num_tasks,
+        global_rank=global_rank,
+    )
 
-    if test_loader is not None:
-        if distributed:
-            assert num_tasks is not None
-            assert global_rank is not None
-            test_sampler = torch.utils.data.DistributedSampler(
-                test_loader,
-                num_replicas=num_tasks,
-                rank=global_rank,
-            )
-            test_dataloader = DataLoader(
-                test_loader,
-                sampler=test_sampler,
-                batch_size=batch_size,
-                num_workers=os.cpu_count() // 4,  # type: ignore
-                prefetch_factor=2,
-                pin_memory=torch.cuda.is_available(),
-                persistent_workers=True,
-            )
-        else:
-            test_dataloader = DataLoader(
-                test_loader,
-                batch_size=batch_size,
-                num_workers=os.cpu_count() // 4,  # type: ignore
-                collate_fn=lambda x: torch.utils.data.dataloader.default_collate(x),
-                prefetch_factor=2,
-                pin_memory=torch.cuda.is_available(),
-                persistent_workers=True,
-            )
-    else:
-        test_dataloader = None
+    test_dataloader = create_loader(
+        loader=test_loader,
+        batch_size=batch_size,
+        shuffle=False,
+        distributed=distributed,
+        num_tasks=num_tasks,
+        global_rank=global_rank,
+    )
 
-    if eval_loader is not None:
-        if distributed:
-            assert num_tasks is not None
-            assert global_rank is not None
-            eval_sampler = torch.utils.data.DistributedSampler(
-                eval_loader,
-                num_replicas=num_tasks,
-                rank=global_rank,
-            )
-            eval_dataloader = DataLoader(
-                eval_loader,
-                sampler=eval_sampler,
-                batch_size=1,
-                num_workers=os.cpu_count() // 4,  # type: ignore
-                prefetch_factor=2,
-                pin_memory=torch.cuda.is_available(),
-                persistent_workers=True,
-            )
-        else:
-            eval_dataloader = DataLoader(
-                eval_loader,
-                batch_size=1,
-                num_workers=os.cpu_count() // 4,  # type: ignore
-                collate_fn=lambda x: torch.utils.data.dataloader.default_collate(x),
-                prefetch_factor=2,
-                pin_memory=torch.cuda.is_available(),
-                persistent_workers=True,
-            )
-    else:
-        eval_dataloader = None
+    eval_dataloader = create_loader(
+        loader=eval_loader,
+        batch_size=1,
+        shuffle=False,
+        distributed=distributed,
+        num_tasks=num_tasks,
+        global_rank=global_rank,
+    )
 
     return train_dataloader, test_dataloader, eval_dataloader

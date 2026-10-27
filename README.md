@@ -15,7 +15,13 @@ or perform downstream classification inference using our pre-trained disease
 classification models trained on brain2vec embeddings.
 
 > [!IMPORTANT]
-> To use our model, you need to apply for access to our [hugging face model card](https://huggingface.co/cbica/Brain2Vec). Otherwise, you can directly use Brain2Vec on [NiChart](https://neuroimagingchart.com).
+> To use our model locally, you first need to apply for access to our [hugging face model card](https://huggingface.co/cbica/Brain2Vec). 
+> We follow a 2-step preprocessing with skull-stripping and linear registration,
+> make sure to follow the steps [here](#pre-processing). **Don't perform inference on raw images locally**.
+> You can always use Brain2Vec on [NiChart](https://neuroimagingchart.com) where
+> you can upload your raw T1w MRI scans via cloud and obtain Brain2Vec
+> scores **without preprocessing steps, installation or specialized
+> infastructure (GPU)**.
 
 ![self-attention](assets/self_attention.png)
 ![brain2vec-example](assets/brain2vec_example.png)
@@ -47,32 +53,26 @@ region-specific effects on the reconstructed anatomy.
 
 * Vision Transformers implementation follows the code of [timm](https://github.com/huggingface/pytorch-image-models) from huggingface.
 
-* You can use Brain2Vec -- for both feature extraction and disease classification/brain age regression -- on [NiChart](https://cloud.neuroimagingchart.com) by simply dragging and dropping your NIfTI files. **No GPU or installation required**.
 
-* Before using any of our models locally, make sure that the input is
-  skull-stripped and linearly registered to a common atlas space. We use
-  [NiChart\_DLMUSE](https://github.com/CBICA/NiChart_DLMUSE) for skull-stripping (DLICV folder)
-  and [flirt](https://fsl.fmrib.ox.ac.uk/fsl/docs/registration/flirt/index.html)
-  for registration, though you can use a different model for skull-stripping and
-  achieve comparable results.
+## Pre-processing
+Before using any of our models locally, make sure that the input is
+skull-stripped and linearly registered to a common atlas space. We use
+[NiChart\_DLMUSE](https://github.com/CBICA/NiChart_DLMUSE) for skull-stripping (s3 masked folder)
+and [flirt](https://fsl.fmrib.ox.ac.uk/fsl/docs/registration/flirt/index.html)
+for registration, though you can use any skull-stripping model and
+achieve comparable results.
 
   ```bash
-  NiChart_DLMUSE -i {dir with nifti files} -o ... --refaced_data
-  flirt -i {DLICV aligned output} -ref registration/img_template.nii.gz -o ...
+  NiChart_DLMUSE -i {dir with nifti files} -o ... --refaced-data
+  flirt -in {s3_masked NiChart_DLMUSE output} -ref registration/img_template.nii.gz -out ...
   ```
 
-If you use our model, make sure to cite our work:
-```
-@misc{maggioros2026brain2vecselfsupervised3dfoundation,
-      title={Brain2Vec: A Self-Supervised 3D Foundation Model for Structural Brain MRI}, 
-      author={Spiros Maggioros and Guray Erus and Gareth Harman and George Aidinis and Alexander Getka and Aristeidis Sotiras and Christos Davatzikos},
-      year={2026},
-      eprint={2610.28411},
-      archivePrefix={arXiv},
-      primaryClass={cs.CV},
-      url={https://arxiv.org/abs/2610.28411}, 
-}
-```
+To validate your pre-processing, you can perform inference on a simple raw scan on 
+NiChart and then compare it to your local inference. If the embeddings are 99% similar,
+then your pre-processing was correct.
+
+You can use Brain2Vec for both feature extraction and disease/risk-factor classification or brain age prediction
+on [NiChart](https://cloud.neuroimagingchart.com) by simply dragging and dropping your NIfTI files, **we perform pre-processing for you, also no GPU or installation required**.
 
 ## Installation
 You can install Brain2Vec locally using pip
@@ -92,10 +92,12 @@ srun Brain2Vec brain2vec_pretrain --img_size 128 \
                          --masking_type random \
                          --mask_ratio 0.75 \
                          --model brain2vec_base \
-                         --in_dir "input_dir/"
+                         --in_dir "input directory with train/test/eval
+                         subdirectories" \
                          --batch_size 32 \
-                         --out_dir "output_dir/" \
-                         --model_name "model name(.pth)" \
+                         --out_dir "directory where the model will be
+                         saved" \
+                         --model_name "model name (.pth)" \
                          --device cuda \
                          --lr 0.001 \
                          --weight_decay 0.05 \
@@ -122,9 +124,11 @@ srun Brain2Vec vit_finetune --img_size 128 \
                          --target "target column" \
                          --pretrain "brain2vec.safetensors (model name from our
                          hugging face)" \
-                         --in_dir "input_dir/"
+                         --in_dir "input directory with train/test/eval
+                         subdirectories" \
                          --batch_size 32 \
-                         --out_dir "output_dir/" \
+                         --out_dir "directory where the model will be
+                         saved" \
                          --model_name "model name (.pth)" \
                          --device cuda \
                          --lr 0.001 \
@@ -146,7 +150,7 @@ classifiers, such as SVM or MLP models.
 ```bash
 python inference.py brain2vec_inference --model brain2vec_base \
                                     --img_size 128 \
-                                    --in_dir "path to directory with niftii scans" \
+                                    --in_dir "path to directory with nifti scans" \
                                     --out_json "name of json file with output embeddings" \
                                     --device cuda
 
@@ -154,8 +158,8 @@ python inference.py vit_inference --model vit_base \
                                 --num_classes 1 \
                                 --img_size 128 \
                                 --mode regression \
-                                --in_dir "input directory with niftii scans" \
-                                --out_csv "output csv file with predictions" \
+                                --in_dir "path to directory with nifti scans" \
+                                --out_csv "output CSV file with predictions" \
                                 --device cuda
 ```
 
@@ -165,9 +169,28 @@ We provide a simple pipeline that enable users to train their own ML models
 using output embeddings from Brain2Vec.
 
 ```bash
-python train_svm.py dx_classification --cn_embeddings "path to your CN embeddings" \
-                                      --dx_embeddings "path to your DX embeddings"
+python train_svm.py dx_classification --cn_embeddings "path to your CN embeddings (.json)" \
+                                      --dx_embeddings "path to your DX embeddings (.json)"
 
-python train_svm.py ba_regression --embeddings "path to your embeddings" \
+python train_svm.py ba_regression --embeddings "path to your embeddings (.json)" \
                                   --label_dict "path to a CSV that contains MRID and Age columns"
 ```
+
+## Citation
+If you use our model, make sure to cite our work:
+```
+@misc{maggioros2026brain2vecselfsupervised3dfoundation,
+      title={Brain2Vec: A Self-Supervised 3D Foundation Model for Structural Brain MRI},
+      author={Spiros Maggioros and Guray Erus and Gareth Harman and George Aidinis and Alexander Getka and Aristeidis Sotiras and Christos Davatzikos},
+      year={2026},
+      eprint={2610.28411},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV},
+      url={https://arxiv.org/abs/2610.28411},
+}
+```
+
+## Contributions
+
+We are open to any contributions about code organization, inference efficiency
+and quality, fixes, etc. Just open a PR with a full explanation of your code.

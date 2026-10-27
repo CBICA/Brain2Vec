@@ -123,16 +123,14 @@ def run_brain2vec_pretrain(args: Any) -> None:
 
     model_without_ddp = model
 
-    num_tasks = args.world_size
-    global_rank = args.rank
     train_dataloader, test_dataloader, _ = create_dataloaders(
         mode="pretrain",
         in_dir=args.in_dir,
         batch_size=args.batch_size,
         target=None,
         distributed=args.distributed,
-        num_tasks=num_tasks if args.distributed else None,
-        global_rank=global_rank if args.distributed else None,
+        num_tasks=args.world_size if args.distributed else None,
+        global_rank=args.rank if args.distributed else None,
         img_size=(int(args.img_size),) * 3,
     )
 
@@ -170,7 +168,7 @@ def run_brain2vec_pretrain(args: Any) -> None:
         accum_iter=args.accum_iter,
         target_dir=args.out_dir,
         model_name=args.model_name,
-        device=args.gpu,
+        device=args.device,
         verbose=args.verbose,
     )
 
@@ -216,8 +214,6 @@ def run_vit_finetune(args: Any) -> None:
         model = model.to(args.device)
 
     model_without_ddp = model
-    num_tasks = args.world_size
-    global_rank = args.rank
 
     train_dataloader, test_dataloader, _ = create_dataloaders(
         mode="finetune",
@@ -226,8 +222,8 @@ def run_vit_finetune(args: Any) -> None:
         label_dict_csv=args.label_dict,
         target=args.target,
         distributed=args.distributed,
-        num_tasks=num_tasks if args.distributed else None,
-        global_rank=global_rank if args.distributed else None,
+        num_tasks=args.world_size if args.distributed else None,
+        global_rank=args.rank if args.distributed else None,
         img_size=(int(args.img_size),) * 3,
     )
 
