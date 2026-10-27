@@ -6,16 +6,11 @@ and [flirt](https://fsl.fmrib.ox.ac.uk/fsl/docs/registration/flirt/index.html)
 for registration, though you can use any skull-stripping model and
 achieve comparable results.
 
-To install NiChart_DLMUSE, you can either install it from source **(Suggested)**:
+You can install NiChart_DLMUSE from source:
 ```bash
 git clone https://github.com/CBICA/NiChart_DLMUSE
 cd NiChart_DLMUSE
 pip install -e .
-```
-
-Or install the latest stable version from PyPI:
-```bash
-pip install NiChart_DLMUSE
 ```
 
 To install flirt, please read flirt's [documentation](https://fsl.fmrib.ox.ac.uk/fsl/docs/install/index.html).
