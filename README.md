@@ -64,7 +64,7 @@ achieve comparable results.
 
   ```bash
   NiChart_DLMUSE -i {dir with nifti files} -o ... --refaced-data
-  flirt -i {s3_masked NiChart_DLMUSE output} -ref registration/img_template.nii.gz -o ...
+  flirt -in {s3_masked NiChart_DLMUSE output} -ref registration/img_template.nii.gz -out ...
   ```
 You can use Brain2Vec for both feature extraction and disease/risk-factor classification or brain age prediction
 on [NiChart](https://cloud.neuroimagingchart.com) by simply dragging and dropping your NIfTI files, **we perform pre-processing for you, also no GPU or installation required**.
