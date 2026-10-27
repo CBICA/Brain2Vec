@@ -34,7 +34,7 @@ def create_loader(
     if distributed:
         assert num_tasks is not None
         assert global_rank is not None
-        train_sampler = torch.utils.data.DistributedSampler(
+        sampler = torch.utils.data.DistributedSampler(
             loader,
             num_replicas=num_tasks,
             rank=global_rank,
@@ -42,7 +42,7 @@ def create_loader(
         )
         dataloader = DataLoader(
             loader,
-            sampler=train_sampler,
+            sampler=sampler,
             batch_size=batch_size,
             num_workers=os.cpu_count() // 4,  # type: ignore
             prefetch_factor=2,
