@@ -56,8 +56,10 @@ region-specific effects on the reconstructed anatomy.
 
 ## Pre-processing
 Before using any of our models locally, make sure that the input is
-skull-stripped and linearly registered to a common atlas space. We use
-[NiChart\_DLMUSE](https://github.com/CBICA/NiChart_DLMUSE) for skull-stripping (s3 masked folder)
+skull-stripped and linearly registered to a common atlas space. We provide a [pre-processing pipeline](preprocessing/)
+that transforms your raw scans to Brain2Vec compatible scans ready for inference.
+
+We use [NiChart\_DLMUSE](https://github.com/CBICA/NiChart_DLMUSE) for skull-stripping (s3 masked folder)
 and [flirt](https://fsl.fmrib.ox.ac.uk/fsl/docs/registration/flirt/index.html)
 for registration, though you can use any skull-stripping model and
 achieve comparable results.
@@ -66,10 +68,6 @@ achieve comparable results.
   NiChart_DLMUSE -i {dir with nifti files} -o ... --refaced-data
   flirt -in {s3_masked NiChart_DLMUSE output} -ref registration/img_template.nii.gz -out ...
   ```
-
-To validate your pre-processing, you can perform inference on a simple raw scan on 
-NiChart and then compare it to your local inference. If the embeddings are 99% similar,
-then your pre-processing was correct.
 
 You can use Brain2Vec for both feature extraction and disease/risk-factor classification or brain age prediction
 on [NiChart](https://cloud.neuroimagingchart.com) by simply dragging and dropping your NIfTI files, **we perform pre-processing for you, also no GPU or installation required**.
