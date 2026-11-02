@@ -8,11 +8,16 @@
 </div>
 
 Code for the [Brain2Vec](https://arxiv.org/abs/2610.28411) paper, a 3D foundation model pre-trained on 74,425
-T1-weighted brain MRI scans. In this repo, you can pre-train your own brain2vec
-model, fine-tune a Vision Transformer (ViT) using our pre-trained brain2vec
-encoder, train your own downstream ML models using brain2vec output embeddings
+T1-weighted brain MRI scans. In this repo, you can extract Brain2Vec embeddings, pre-train your own brain2vec
+model, fine-tune a Vision Transformer (ViT) using our pre-trained weights,
+train your own downstream ML models using brain2vec output embeddings
 or perform downstream classification inference using our pre-trained disease
 classification models trained on brain2vec embeddings.
+
+We are happy to announce that Brain2Vec achieved top spots on [BrainFMBench](https://github.com/epics-lab/BrainFMBench):
+
+- 🥇 Brain age and BMI prediction on NKI, BMI prediction on HBN
+- 🥈 Brain age prediction on HBN, Sex classification on NKI
 
 > [!IMPORTANT]
 > To use our model locally, you first need to apply for access to our [hugging face model card](https://huggingface.co/cbica/Brain2Vec). 
@@ -140,10 +145,12 @@ srun Brain2Vec vit_finetune --img_size 128 \
 
 ## Inference
 
-One other way of using Brain2Vec is for feature extraction. We can use the
+One way of using Brain2Vec is for feature extraction. We can use the
 Brain2Vec frozen encoder to produce 768-dimensional embeddings from T1 scans.
 This compact numerical representation serves as input for lightweight downstream
 classifiers, such as SVM or MLP models.
+
+You can also perform brain age prediction with our finetuned ViT-BA.
 
 ```bash
 python inference.py brain2vec_inference --model brain2vec_base \
