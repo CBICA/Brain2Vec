@@ -15,9 +15,9 @@ or perform downstream classification inference using our pre-trained disease
 classification models trained on brain2vec embeddings.
 
 We are happy to announce that Brain2Vec achieved **top spots** on [BrainFMBench](https://github.com/epics-lab/BrainFMBench):
-
-- 🥇 Brain age and BMI prediction on NKI, BMI prediction on HBN
-- 🥈 Brain age prediction on HBN, Sex classification on NKI
+- **#1 Overall foundation model**
+- 🥇 Brain age and BMI prediction on NKI
+- 🥈 Brain age and BMI prediction on HBN, Sex classification on NKI
 
 > [!IMPORTANT]
 > To use our model locally, you first need to apply for access to our [hugging face model card](https://huggingface.co/cbica/Brain2Vec). 
