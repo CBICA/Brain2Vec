@@ -14,7 +14,7 @@ train your own downstream ML models using brain2vec output embeddings
 or perform downstream classification inference using our pre-trained disease
 classification models trained on brain2vec embeddings.
 
-We are happy to announce that Brain2Vec achieved top spots on [BrainFMBench](https://github.com/epics-lab/BrainFMBench):
+We are happy to announce that Brain2Vec achieved **top spots** on [BrainFMBench](https://github.com/epics-lab/BrainFMBench):
 
 - 🥇 Brain age and BMI prediction on NKI, BMI prediction on HBN
 - 🥈 Brain age prediction on HBN, Sex classification on NKI
