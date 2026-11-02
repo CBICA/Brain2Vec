@@ -15,6 +15,10 @@ pip install -e .
 
 To install flirt, please read flirt's [documentation](https://fsl.fmrib.ox.ac.uk/fsl/docs/install/index.html).
 
+> [!TIP]
+> We suggest to use a different python virtualenv for preprocessing and Brain2Vec
+> inference to avoid dependency issues with DLMUSE.
+
 ## Run pre-processing pipeline
 
 To run the pre-processing pipeline, just do:
