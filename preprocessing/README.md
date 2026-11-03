@@ -18,6 +18,10 @@ To install flirt, please read flirt's [documentation](https://fsl.fmrib.ox.ac.uk
 > [!TIP]
 > We suggest to use a different python virtualenv for preprocessing and Brain2Vec
 > inference to avoid dependency issues with DLMUSE.
+> We also suggest to use multithreading for flirt alignment (via a thread pool)
+> to parallelize the second part of preprocessing. Multithreading is not
+> provided in the code because every cluster environment is different, code
+> provided works on every environment.
 
 ## Run pre-processing pipeline
 
