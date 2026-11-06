@@ -2,12 +2,24 @@ import argparse
 import os
 import shutil
 import subprocess
+import sys
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import Any
 
 TEMPLATE = (
     Path(__file__).resolve().parent.parent / "registration" / "img_template.nii.gz"
 )
+
+
+def align_scan(img: Path, aligned_dir: Path, template: str, env: dict) -> Path:
+    out = aligned_dir / f"{img.name[:-7]}_brain2vec_aligned.nii.gz"
+    subprocess.run(
+        ["flirt", "-in", str(img), "-ref", str(template), "-out", str(out)],
+        check=True,
+        env=env,
+    )
+    return out
 
 
 def process_scans(args: Any) -> None:
@@ -31,13 +43,25 @@ def process_scans(args: Any) -> None:
     aligned_dir.mkdir(parents=True, exist_ok=True)
 
     env = {**os.environ, "FSLOUTPUTTYPE": "NIFTI_GZ"}
-    for img in sorted(masked_dir.glob("*.nii.gz")):
-        out = aligned_dir / f"{img.name[:-7]}_brain2vec_aligned.nii.gz"
-        subprocess.run(
-            ["flirt", "-in", str(img), "-ref", str(args.template), "-out", str(out)],
-            check=True,
-            env=env,
-        )
+    imgs = sorted(masked_dir.glob("*.nii.gz"))
+    workers = max(1, min(args.workers, len(imgs))) if imgs else 1
+
+    failed = []
+    with ThreadPoolExecutor(max_workers=workers) as ex:
+        futures = {
+            ex.submit(align_scan, img, aligned_dir, args.template, env): img
+            for img in imgs
+        }
+        for _, fut in enumerate(as_completed(futures), 1):
+            img = futures[fut]
+            try:
+                fut.result()
+            except subprocess.CalledProcessError:
+                failed.append(img.name)
+
+    if failed:
+        print(f"{len(failed)} scan(s) failed: {', '.join(failed)}", file=sys.stderr)
+        sys.exit(1)
 
     if not args.keep_temp:
         shutil.rmtree(out_dir / "temp_working_dir", ignore_errors=True)
@@ -63,6 +87,13 @@ def main() -> None:
         "--template",
         default=str(TEMPLATE),
         help="Registration template (default: ../registration/img_template.nii.gz)",
+    )
+    parser.add_argument(
+        "--workers",
+        "-w",
+        type=int,
+        default=os.cpu_count() or 1,
+        help="Parallel FLIRT jobs (default: all CPU cores)",
     )
     parser.add_argument(
         "--keep_temp",
