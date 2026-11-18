@@ -16,8 +16,8 @@ classification models trained on brain2vec embeddings.
 
 We are happy to announce that Brain2Vec achieved **top spots** on [BrainFMBench](https://www.epics-lab.ca/BrainFMBench/):
 - **#1 Ranked foundation model**
-- 🥇 Brain age and BMI prediction on NKI
-- 🥈 Brain age and BMI prediction on HBN, Sex classification on NKI
+- 🥇 Brain2Vec ranked 1st on 9 of 15 tasks
+- 🥈 And 1st or 2nd on 11 of 15 tasks
 
 > [!IMPORTANT]
 > To use our model locally, you first need to apply for access to our [hugging face model card](https://huggingface.co/cbica/Brain2Vec). 
